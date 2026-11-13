@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CopyIconD, ExportIcon, Icon, ImageIcon, MoonIcon } from "../common/Icon";
 
+import { MAX_EXPORT_SIDE, effectiveScale } from "../common/exportLimits";
+
 import { requestFrame } from "./frames";
 import { IN_TAURI, baseName, native, stripExt } from "./native";
 import { setState, toast, useStore } from "./store";
@@ -181,8 +183,14 @@ export const ExportDialog = ({ docId }: { docId: string }) => {
   };
 
   const set = (patch: Partial<Prefs>) => setPrefs((p) => ({ ...p, ...patch }));
-  const pxW = preview ? Math.round(preview.width * options.scale) : 0;
-  const pxH = preview ? Math.round(preview.height * options.scale) : 0;
+  // what will actually be written (PNG/JPEG are capped; see exportLimits)
+  const scaleUsed =
+    preview && options.format !== "svg"
+      ? effectiveScale(preview.width, preview.height, options.scale)
+      : options.scale;
+  const capped = scaleUsed < options.scale - 1e-6;
+  const pxW = preview ? Math.round(preview.width * scaleUsed) : 0;
+  const pxH = preview ? Math.round(preview.height * scaleUsed) : 0;
 
   return (
     <Modal
@@ -217,8 +225,16 @@ export const ExportDialog = ({ docId }: { docId: string }) => {
             <span className="dsk-muted">{previewError ?? "Rendering preview…"}</span>
           )}
           {preview && (
-            <span className="dsk-export__size">
-              {pxW} × {pxH} px
+            <span
+              className={`dsk-export__size${capped ? " dsk-export__size--capped" : ""}`}
+              title={
+                capped
+                  ? `Very large drawing: reduced to fit the ${MAX_EXPORT_SIDE.toLocaleString()} px / 100 megapixel image limit. Use SVG for unlimited size.`
+                  : undefined
+              }
+            >
+              {pxW.toLocaleString()} × {pxH.toLocaleString()} px
+              {capped && " · reduced to fit"}
             </span>
           )}
         </div>

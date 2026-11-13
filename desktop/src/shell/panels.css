@@ -60,6 +60,10 @@
   background: var(--glass);
 }
 
+.dsk-export__size--capped {
+  color: var(--color-danger-text);
+}
+
 .dsk-export__opts {
   display: flex;
   flex-direction: column;

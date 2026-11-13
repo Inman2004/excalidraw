@@ -13,6 +13,7 @@ import { syncMovedIndices } from "@excalidraw/element";
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
+import { effectiveScale } from "../common/exportLimits";
 import { searchElements } from "../common/search";
 
 import { calloutReportText, formatNumber } from "./annotate";
@@ -119,14 +120,16 @@ const runExport = async (
       height: Number(svg.getAttribute("height")) || 0,
     };
   }
+  // raster exports are capped (canvas size limit, encode time)
+  const scale = (w: number, h: number) => effectiveScale(w, h, o.scale);
   const blob =
     o.format === "png"
       ? await exportScene({
           data,
           type: "png",
-          config: { ...base, scale: o.scale, embedScene: o.embed },
+          config: { ...base, scale, embedScene: o.embed },
         })
-      : await exportScene({ data, type: "jpeg", config: { ...base, scale: o.scale } });
+      : await exportScene({ data, type: "jpeg", config: { ...base, scale } });
   return { bytes: await blobToBuffer(blob), width: 0, height: 0 };
 };
 

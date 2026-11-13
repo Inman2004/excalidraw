@@ -58,6 +58,7 @@ export const native = {
       ? invoke<SaveResult>("doc_save", { path, text, expected, force })
       : unsupported("Saving files"),
 
+  /** Large binary writes (exports): raw IPC body, options in headers. */
   docSaveBytes: (
     path: string,
     bytes: Uint8Array,
@@ -65,11 +66,12 @@ export const native = {
     force: boolean,
   ) =>
     IN_TAURI
-      ? invoke<SaveResult>("doc_save_bytes", {
-          path,
-          bytes: Array.from(bytes),
-          expected,
-          force,
+      ? invoke<SaveResult>("doc_save_bytes", bytes, {
+          headers: {
+            "x-path": encodeURIComponent(path),
+            "x-force": force ? "1" : "0",
+            "x-expected": expected ? encodeURIComponent(JSON.stringify(expected)) : "null",
+          },
         })
       : unsupported("Exporting files"),
 

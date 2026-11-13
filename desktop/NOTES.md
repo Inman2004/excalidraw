@@ -59,14 +59,23 @@ plus all of its WebView2 processes (browser, GPU, renderer, utilities).
 | Tab switch, mounted | 10 ms | 20 ms | ≤ 50 ms ✅ |
 | Tab switch, evicted (reload from recovery) | 216 ms | 225 ms | — |
 | Callout: Enter → element in scene (upper bound) | 12 ms | 14 ms | ≤ 50 ms ✅ |
-| Export 18 MB drawing, PNG 1× (23 MB file) | 880 ms | 967 ms (3 runs) | — |
-| Export 18 MB drawing, PNG 2× (63 MB file) | 6.9 s | 16.8 s (3 runs) | — |
+| Export 18 MB drawing, PNG 1× (6 010 px, 22 MB) | 761 ms | 765 ms (3 runs) | — |
+| Export 18 MB drawing, PNG 2× / 4× (capped to 10 000 px, 45 MB) | 2.5 s | 2.7 s (3 runs each) | — |
+| Write a 23 MB export to disk (raw IPC body) | 344 ms | — | — |
 
 Memory: 242 MB with 1 tab at startup; 486 / 581 / 651 MB at 3 / 6 / 12 tabs (frames capped at
 6 by the LRU, so 12 tabs cost little more than 6). Opening and closing the 18 MB drawing five
 times peaks at 650 MB and settles back to 299 MB within 20 s (renderer 346 → 76 MB; the rest
 is GPU texture cache): no leak.
 
-Misses / notes: 2× PNG export of a very large drawing is slow (a ~12 000 × 8 000 px canvas
-encoded to PNG by the WebView); the dialog shows a busy state meanwhile. Timings come from
+Fixed after the first measurement:
+- PNG/JPEG exports are capped at 16 384 px per side and 100 megapixels
+  (`src/common/exportLimits.ts`). Before, 3×/4× of a large drawing failed outright
+  ("couldn't export to blob", over Chromium's canvas limit) and 2× took 6.9 s (p95 16.8 s).
+  The dialog shows the real output size and marks it "reduced to fit"; SVG is never capped.
+- Export bytes go to Rust as a raw IPC body instead of a JSON number array: writing 23 MB
+  dropped from 5.1 s to 344 ms (content verified byte for byte, unicode path).
+
+Remaining: while Excalidraw renders a very large export the UI runs at ~40–65 % of frames
+(the engine draws on the main thread); the dialog shows a busy state. Timings come from
 `window.__dskMetrics` (startup and load) and in-page `performance.now()`.

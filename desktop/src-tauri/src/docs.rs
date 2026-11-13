@@ -175,14 +175,47 @@ pub fn doc_save(
     save_bytes_checked(Path::new(&path), text.as_bytes(), expected, force)
 }
 
+/// Raw-body variant for large exports: the bytes travel as the IPC body (no
+/// JSON number array), the target and options as headers.
 #[tauri::command]
-pub fn doc_save_bytes(
-    path: String,
-    bytes: Vec<u8>,
-    expected: Option<DiskVersion>,
-    force: bool,
-) -> Result<SaveResult, String> {
-    save_bytes_checked(Path::new(&path), &bytes, expected, force)
+pub fn doc_save_bytes(request: tauri::ipc::Request) -> Result<SaveResult, String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("expected a binary body".into());
+    };
+    let header = |name: &str| {
+        request
+            .headers()
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_string)
+    };
+    let path = percent_decode(&header("x-path").ok_or("missing path")?)?;
+    let force = header("x-force").as_deref() == Some("1");
+    let expected: Option<DiskVersion> = match header("x-expected") {
+        Some(json) if !json.is_empty() && json != "null" => {
+            Some(serde_json::from_str(&percent_decode(&json)?).map_err(|e| e.to_string())?)
+        }
+        _ => None,
+    };
+    save_bytes_checked(Path::new(&path), bytes, expected, force)
+}
+
+/// Decodes `encodeURIComponent` output (header values must be ASCII).
+fn percent_decode(s: &str) -> Result<String, String> {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).map_err(|e| e.to_string())?;
+            out.push(u8::from_str_radix(hex, 16).map_err(|e| e.to_string())?);
+            i += 3;
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8(out).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
