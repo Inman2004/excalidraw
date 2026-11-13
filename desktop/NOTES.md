@@ -39,9 +39,34 @@ search, frames, callouts and presentation.
 - Templates (`templates/*.json`): element skeletons converted by `convertToExcalidrawElements`.
 
 ## Known gaps
-- Quick switcher shows no thumbnails (spec item; deprioritised).
-- File history lists versions without thumbnails.
-- Performance budgets below are not yet measured.
+- The installer is not code-signed (needs a purchased certificate), so SmartScreen warns on
+  first run.
+- A physical drag from Explorer was not exercised end to end: Windows routes OLE drops to the
+  window under the real cursor, which needs mouse control. The app side was verified with the
+  exact `tauri://drag-drop` event Tauri emits for a native drop.
 
-## Performance budgets
-(to be measured: median + p95 of 5 runs, same machine)
+## Performance budgets — measured 2026-11-14
+Release build (`tauri build`, NSIS), Windows 11, WebView2 157, same machine, driven over the
+WebView2 debug port. Median / p95 of 5 runs unless noted. Memory is private bytes of the app
+plus all of its WebView2 processes (browser, GPU, renderer, utilities).
+
+| Budget | Median | p95 | Target |
+| --- | --- | --- | --- |
+| Start → window visible | 48 ms | 122 ms | — |
+| Start → usable canvas (session restore, 1 tab) | 851 ms | 969 ms | ≤ 1.2 s ✅ |
+| Open small drawing (20 shapes) | ~190 ms | 205 ms | — |
+| Open 18 MB drawing (8 000 shapes + 11 MB image) | 738 ms | 901 ms | — |
+| Tab switch, mounted | 10 ms | 20 ms | ≤ 50 ms ✅ |
+| Tab switch, evicted (reload from recovery) | 216 ms | 225 ms | — |
+| Callout: Enter → element in scene (upper bound) | 12 ms | 14 ms | ≤ 50 ms ✅ |
+| Export 18 MB drawing, PNG 1× (23 MB file) | 880 ms | 967 ms (3 runs) | — |
+| Export 18 MB drawing, PNG 2× (63 MB file) | 6.9 s | 16.8 s (3 runs) | — |
+
+Memory: 242 MB with 1 tab at startup; 486 / 581 / 651 MB at 3 / 6 / 12 tabs (frames capped at
+6 by the LRU, so 12 tabs cost little more than 6). Opening and closing the 18 MB drawing five
+times peaks at 650 MB and settles back to 299 MB within 20 s (renderer 346 → 76 MB; the rest
+is GPU texture cache): no leak.
+
+Misses / notes: 2× PNG export of a very large drawing is slow (a ~12 000 × 8 000 px canvas
+encoded to PNG by the WebView); the dialog shows a busy state meanwhile. Timings come from
+`window.__dskMetrics` (startup and load) and in-page `performance.now()`.

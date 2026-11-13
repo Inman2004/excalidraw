@@ -338,6 +338,7 @@ export const activateTab = async (tabId: string) => {
     // finishing after the editor loaded would leave the tab "opening" forever
     let preparing = preparingLoads.get(doc.docId);
     if (!preparing) {
+      metrics.activateStart.set(doc.docId, performance.now());
       setState((s2) => ({ loading: { ...s2.loading, [doc.docId]: true } }));
       preparing = prepareLoad(doc).finally(() => preparingLoads.delete(doc.docId));
       preparingLoads.set(doc.docId, preparing);
@@ -448,6 +449,17 @@ const handleSnapshot = (docId: string, snap: Snapshot) => {
 const preparingLoads = new Map<string, Promise<unknown>>();
 
 /**
+ * Timings for the performance budgets in NOTES.md (ms since page start).
+ * Read-only diagnostics; nothing in the app depends on them.
+ */
+const metrics = {
+  firstLoaded: null as number | null,
+  activateStart: new Map<string, number>(),
+  loadMs: {} as Record<string, number>,
+};
+(window as any).__dskMetrics = metrics;
+
+/**
  * Safety net: an editor that answers but whose "loaded" message was missed
  * (e.g. its page reloaded mid-handshake) is treated as loaded.
  */
@@ -472,6 +484,13 @@ const onLoaded = (docId: string, baseline: Snapshot) => {
     return;
   }
   const r = rt(docId);
+  const now = performance.now();
+  metrics.firstLoaded ??= now;
+  const startedAt = metrics.activateStart.get(docId);
+  if (startedAt !== undefined) {
+    metrics.loadMs[docId] = now - startedAt;
+    metrics.activateStart.delete(docId);
+  }
   const hash = hashText(baseline.json);
   r.latest = baseline;
   const fromDisk = r.pendingLoad?.fromDisk ?? false;
