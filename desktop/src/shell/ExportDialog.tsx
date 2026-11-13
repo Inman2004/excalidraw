@@ -37,6 +37,13 @@ const MIME: Record<ExportFormat, string> = {
 };
 const EXT: Record<ExportFormat, string> = { png: "png", svg: "svg", jpeg: "jpg" };
 
+/**
+ * Let the busy state reach the screen before the export starts: the editor
+ * renders large exports on the shared main thread, which blocks painting.
+ */
+const paintFirst = () =>
+  new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
 const safeName = (name: string) => name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_").trim() || "drawing";
 
 const resultBytes = (r: ExportResult) =>
@@ -133,6 +140,7 @@ export const ExportDialog = ({ docId }: { docId: string }) => {
   };
 
   const run = async () => {
+    await paintFirst();
     const r = await requestFrame<ExportResult>(docId, { op: "export", options }, 120000);
     return resultBytes(r);
   };
@@ -167,6 +175,7 @@ export const ExportDialog = ({ docId }: { docId: string }) => {
   const copy = async () => {
     setBusy("copy");
     try {
+      await paintFirst();
       const r = await requestFrame<ExportResult>(docId, { op: "export", options }, 120000);
       if (options.format === "svg") {
         await native.copyText(r.svg ?? "");
