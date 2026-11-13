@@ -1,0 +1,116 @@
+{
+ "name": "Annotation board",
+ "description": "Image area, title and a colour legend for callouts",
+ "elements": [
+  {
+   "type": "text",
+   "x": 0,
+   "y": -90,
+   "text": "Review notes",
+   "fontSize": 36
+  },
+  {
+   "type": "text",
+   "x": 0,
+   "y": -40,
+   "text": "Paste a screenshot with Ctrl+Shift+V, or drop an image here.\nThen Annotate (Ctrl+Shift+A): click the spot, click where the label goes, type.",
+   "fontSize": 16,
+   "strokeColor": "#868e96"
+  },
+  {
+   "type": "rectangle",
+   "id": "shot",
+   "x": 0,
+   "y": 30,
+   "width": 800,
+   "height": 480,
+   "strokeStyle": "dashed",
+   "strokeColor": "#adb5bd",
+   "label": {
+    "text": "Image goes here",
+    "strokeColor": "#adb5bd"
+   },
+   "roughness": 0,
+   "strokeWidth": 2
+  },
+  {
+   "type": "text",
+   "x": 840,
+   "y": 30,
+   "text": "Legend",
+   "fontSize": 24
+  },
+  {
+   "type": "rectangle",
+   "x": 840,
+   "y": 80,
+   "width": 24,
+   "height": 24,
+   "backgroundColor": "#ffc9c9",
+   "strokeColor": "#e03131",
+   "fillStyle": "solid",
+   "roughness": 0
+  },
+  {
+   "type": "text",
+   "x": 876,
+   "y": 82,
+   "text": "Bug / must fix",
+   "fontSize": 16
+  },
+  {
+   "type": "rectangle",
+   "x": 840,
+   "y": 120,
+   "width": 24,
+   "height": 24,
+   "backgroundColor": "#a5d8ff",
+   "strokeColor": "#1971c2",
+   "fillStyle": "solid",
+   "roughness": 0
+  },
+  {
+   "type": "text",
+   "x": 876,
+   "y": 122,
+   "text": "Question",
+   "fontSize": 16
+  },
+  {
+   "type": "rectangle",
+   "x": 840,
+   "y": 160,
+   "width": 24,
+   "height": 24,
+   "backgroundColor": "#b2f2bb",
+   "strokeColor": "#2f9e44",
+   "fillStyle": "solid",
+   "roughness": 0
+  },
+  {
+   "type": "text",
+   "x": 876,
+   "y": 162,
+   "text": "Looks good",
+   "fontSize": 16
+  },
+  {
+   "type": "rectangle",
+   "x": 840,
+   "y": 200,
+   "width": 24,
+   "height": 24,
+   "backgroundColor": "#ffec99",
+   "strokeColor": "#f08c00",
+   "fillStyle": "solid",
+   "roughness": 0
+  },
+  {
+   "type": "text",
+   "x": 876,
+   "y": 202,
+   "text": "Idea / nice to have",
+   "fontSize": 16
+  }
+ ]
+}

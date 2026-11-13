@@ -1,0 +1,238 @@
+{
+ "name": "Wireframe",
+ "description": "Desktop and mobile page layouts in frames",
+ "elements": [
+  {
+   "type": "rectangle",
+   "id": "d-head",
+   "x": 0,
+   "y": 0,
+   "width": 1280,
+   "height": 64,
+   "backgroundColor": "#e9ecef",
+   "fillStyle": "solid",
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057"
+  },
+  {
+   "type": "text",
+   "id": "d-logo",
+   "x": 32,
+   "y": 20,
+   "text": "Logo",
+   "fontSize": 20
+  },
+  {
+   "type": "text",
+   "id": "d-nav",
+   "x": 900,
+   "y": 22,
+   "text": "Home    Features    Pricing    Sign in",
+   "fontSize": 16
+  },
+  {
+   "type": "rectangle",
+   "id": "d-hero",
+   "x": 32,
+   "y": 96,
+   "width": 1216,
+   "height": 320,
+   "backgroundColor": "#f1f3f5",
+   "fillStyle": "hachure",
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057",
+   "label": {
+    "text": "Hero image / headline"
+   }
+  },
+  {
+   "type": "rectangle",
+   "id": "d-c1",
+   "x": 32,
+   "y": 448,
+   "width": 384,
+   "height": 220,
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057",
+   "label": {
+    "text": "Card"
+   }
+  },
+  {
+   "type": "rectangle",
+   "id": "d-c2",
+   "x": 448,
+   "y": 448,
+   "width": 384,
+   "height": 220,
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057",
+   "label": {
+    "text": "Card"
+   }
+  },
+  {
+   "type": "rectangle",
+   "id": "d-c3",
+   "x": 864,
+   "y": 448,
+   "width": 384,
+   "height": 220,
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057",
+   "label": {
+    "text": "Card"
+   }
+  },
+  {
+   "type": "rectangle",
+   "id": "d-foot",
+   "x": 0,
+   "y": 700,
+   "width": 1280,
+   "height": 100,
+   "backgroundColor": "#e9ecef",
+   "fillStyle": "solid",
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057",
+   "label": {
+    "text": "Footer"
+   }
+  },
+  {
+   "type": "rectangle",
+   "id": "m-head",
+   "x": 1400,
+   "y": 0,
+   "width": 390,
+   "height": 56,
+   "backgroundColor": "#e9ecef",
+   "fillStyle": "solid",
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057"
+  },
+  {
+   "type": "text",
+   "id": "m-logo",
+   "x": 1416,
+   "y": 16,
+   "text": "Logo",
+   "fontSize": 20
+  },
+  {
+   "type": "text",
+   "id": "m-menu",
+   "x": 1740,
+   "y": 14,
+   "text": "\u2630",
+   "fontSize": 24
+  },
+  {
+   "type": "rectangle",
+   "id": "m-hero",
+   "x": 1416,
+   "y": 76,
+   "width": 358,
+   "height": 220,
+   "backgroundColor": "#f1f3f5",
+   "fillStyle": "hachure",
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057",
+   "label": {
+    "text": "Hero"
+   }
+  },
+  {
+   "type": "rectangle",
+   "id": "m-c1",
+   "x": 1416,
+   "y": 316,
+   "width": 358,
+   "height": 140,
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057",
+   "label": {
+    "text": "Card"
+   }
+  },
+  {
+   "type": "rectangle",
+   "id": "m-c2",
+   "x": 1416,
+   "y": 472,
+   "width": 358,
+   "height": 140,
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057",
+   "label": {
+    "text": "Card"
+   }
+  },
+  {
+   "type": "rectangle",
+   "id": "m-btn",
+   "x": 1416,
+   "y": 640,
+   "width": 358,
+   "height": 52,
+   "backgroundColor": "#a5d8ff",
+   "fillStyle": "solid",
+   "roundness": {
+    "type": 3
+   },
+   "roughness": 0,
+   "strokeWidth": 1,
+   "strokeColor": "#495057",
+   "label": {
+    "text": "Call to action"
+   }
+  },
+  {
+   "type": "frame",
+   "id": "f-desk",
+   "x": -20,
+   "y": -20,
+   "width": 1320,
+   "height": 840,
+   "name": "Desktop",
+   "children": [
+    "d-head",
+    "d-logo",
+    "d-nav",
+    "d-hero",
+    "d-c1",
+    "d-c2",
+    "d-c3",
+    "d-foot"
+   ]
+  },
+  {
+   "type": "frame",
+   "id": "f-mob",
+   "x": 1380,
+   "y": -20,
+   "width": 430,
+   "height": 840,
+   "name": "Mobile",
+   "children": [
+    "m-head",
+    "m-logo",
+    "m-menu",
+    "m-hero",
+    "m-c1",
+    "m-c2",
+    "m-btn"
+   ]
+  }
+ ]
+}

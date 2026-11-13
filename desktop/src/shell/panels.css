@@ -1,0 +1,488 @@
+/* Tool panels: export, palettes, drawers, templates. Same dew-drop glass
+   surfaces as the rest of the shell. */
+
+/* ------------------------------------------------------------ export */
+
+.dsk-export {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 18px;
+}
+
+@media (max-width: 620px) {
+  .dsk-export {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dsk-export__preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--drop-rim);
+  /* checkerboard shows transparency */
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #ececf4 25%, transparent 25%),
+    linear-gradient(-45deg, #ececf4 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ececf4 75%),
+    linear-gradient(-45deg, transparent 75%, #ececf4 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.dsk-export__preview--dark {
+  background-color: #232329;
+  background-image: linear-gradient(45deg, #2e2d39 25%, transparent 25%),
+    linear-gradient(-45deg, #2e2d39 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2e2d39 75%),
+    linear-gradient(-45deg, transparent 75%, #2e2d39 75%);
+}
+
+.dsk-export__preview img {
+  max-width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+.dsk-export__size {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--color-muted);
+  background: var(--glass);
+}
+
+.dsk-export__opts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dsk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.dsk-field .dsk-seg {
+  align-self: flex-start;
+}
+
+.dsk-select {
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--canvas);
+  color: var(--color-on-surface);
+  font: inherit;
+  font-size: 13px;
+}
+
+.dsk-seg__opt:disabled,
+.dsk-toggle:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dsk-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+/* ------------------------------------------------------------ palette */
+
+.dsk-backdrop--top {
+  align-items: flex-start;
+  padding-top: 10vh;
+  background: rgba(12, 12, 14, 0.18);
+  backdrop-filter: none;
+}
+
+.dsk-palette {
+  width: min(620px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  border-radius: var(--radius-card);
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid var(--drop-rim);
+  box-shadow: inset 0 1px 0 var(--drop-edge), var(--glass-shadow);
+  overflow: hidden;
+  animation: dsk-drop-in 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dsk-palette__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--drop-rim);
+}
+
+.dsk-palette__search input {
+  flex: 1;
+  height: 34px;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--color-on-surface);
+  font: inherit;
+  font-size: 16px;
+}
+
+.dsk-palette__list {
+  overflow: auto;
+  padding: 6px;
+}
+
+.dsk-palette__group {
+  padding: 8px 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.dsk-palette__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--color-on-surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dsk-palette__item--active {
+  background: var(--color-surface-high);
+}
+
+.dsk-palette__item:disabled {
+  opacity: 0.5;
+}
+
+.dsk-palette__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.dsk-palette__title,
+.dsk-palette__sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dsk-palette__title {
+  font-size: 14px;
+}
+
+.dsk-palette__sub {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.dsk-palette__title mark {
+  background: var(--color-primary-light);
+  color: inherit;
+  border-radius: 3px;
+}
+
+.dsk-palette__badge {
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--color-muted);
+  background: var(--color-surface-low);
+}
+
+.dsk-palette__empty {
+  padding: 18px 12px;
+  color: var(--color-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.dsk-palette__foot {
+  display: flex;
+  gap: 16px;
+  padding: 7px 14px;
+  border-top: 1px solid var(--drop-rim);
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+/* ------------------------------------------------------------ drawers */
+
+.dsk-drawer {
+  position: absolute;
+  top: 64px;
+  right: 12px;
+  bottom: 12px;
+  width: 300px;
+  max-width: calc(100% - 24px);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-card);
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid var(--drop-rim);
+  box-shadow: inset 0 1px 0 var(--drop-edge), var(--glass-shadow);
+  z-index: 50;
+  animation: dsk-drop-in 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dsk-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 10px 6px 16px;
+}
+
+.dsk-drawer__head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.dsk-drawer__body {
+  flex: 1;
+  overflow: auto;
+  padding: 0 12px 12px;
+  font-size: 13px;
+}
+
+.dsk-drawer__foot {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--drop-rim);
+}
+
+.dsk-drawer__note {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.dsk-frames-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dsk-frames-list li {
+  border-radius: 14px;
+  transition: opacity 0.15s;
+}
+
+.dsk-frames-list--drag {
+  opacity: 0.4;
+}
+
+.dsk-frame-card {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  grid-template-rows: auto auto;
+  gap: 4px 8px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--drop-rim);
+  border-radius: 14px;
+  background: var(--drop-fill);
+  color: var(--color-on-surface);
+  font: inherit;
+  text-align: left;
+  cursor: grab;
+}
+
+.dsk-frame-card:hover {
+  background: var(--drop-fill-hover);
+}
+
+.dsk-frame-card__n {
+  grid-row: span 2;
+  align-self: center;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.dsk-frame-card__thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 110px;
+  border-radius: 8px;
+  background: var(--canvas);
+  overflow: hidden;
+}
+
+.dsk-frame-card__thumb img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.dsk-frame-card__name {
+  font-size: 13px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dsk-callouts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dsk-callout {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--drop-fill);
+  border: 1px solid var(--drop-rim);
+}
+
+.dsk-callout__n {
+  grid-row: 1 / span 2;
+  min-width: 34px;
+  height: 28px;
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dsk-callout__label {
+  grid-column: 2;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-on-surface);
+  font: inherit;
+  font-size: 13px;
+}
+
+.dsk-callout__label:hover,
+.dsk-callout__label:focus {
+  border-color: var(--color-border);
+  background: var(--canvas);
+  outline: none;
+}
+
+.dsk-callout__swatches {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  gap: 6px;
+  padding-left: 8px;
+}
+
+.dsk-callout .dsk-iconbtn {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+}
+
+.dsk-callout__swatch {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dsk-callout__swatch--on {
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 3.5px var(--color-on-surface);
+}
+
+/* ------------------------------------------------------------ templates */
+
+.dsk-tpls {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.dsk-tpl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--drop-rim);
+  border-radius: 14px;
+  background: var(--drop-fill);
+  color: var(--color-on-surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s;
+}
+
+.dsk-tpl:hover,
+.dsk-tpl:focus-visible {
+  background: var(--drop-fill-hover);
+  transform: translateY(-2px);
+}
+
+.dsk-tpl__art {
+  width: 100%;
+  height: 84px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--canvas);
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.dsk-tpl__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.dsk-tpl__desc {
+  font-size: 12px;
+  color: var(--color-muted);
+}

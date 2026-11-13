@@ -1,0 +1,710 @@
+/* Shell UI — Excalidraw tokens + "liquid dew-drop" surfaces:
+   soft rounded rectangles, translucent glass fill, a light top-edge
+   highlight and gentle depth. */
+
+@font-face {
+  font-family: "Assistant";
+  src: url("/Assistant-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  /* Excalidraw light tokens */
+  --color-primary: #6965db;
+  --color-primary-darker: #5b57d1;
+  --color-primary-light: #e3e2fe;
+  --color-surface-high: #f1f0ff;
+  --color-surface-mid: #f6f6f9;
+  --color-surface-low: #ececf4;
+  --color-on-surface: #1b1b1f;
+  --color-muted: #6b6b75;
+  --color-danger: #db6965;
+  --color-danger-text: #c92a2a;
+  --color-border: #c5c5d0;
+  --overlay: rgba(12, 12, 14, 0.35);
+
+  /* dew-drop glass */
+  --bar-bg: #ececf4;
+  --drop-fill: rgba(255, 255, 255, 0.55);
+  --drop-fill-hover: rgba(255, 255, 255, 0.78);
+  --drop-active: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 250, 255, 0.92) 100%);
+  --drop-edge: rgba(255, 255, 255, 0.9);
+  --drop-rim: rgba(105, 101, 219, 0.14);
+  --drop-shadow: 0 1px 2px rgba(27, 27, 31, 0.06), 0 6px 18px -6px rgba(27, 27, 31, 0.16);
+  --drop-shadow-active: 0 1px 2px rgba(27, 27, 31, 0.08), 0 10px 24px -8px rgba(105, 101, 219, 0.35);
+  --glass: rgba(255, 255, 255, 0.82);
+  --glass-shadow: 0 1px 1px rgba(0, 0, 0, 0.04), 0 24px 60px -12px rgba(27, 27, 31, 0.28);
+
+  --canvas: #ffffff;
+  --tab-hover: rgba(255, 255, 255, 0.55);
+  --tab-shadow: rgba(27, 27, 31, 0.08);
+  --radius-drop: 12px;
+  --radius-card: 18px;
+  font-family: "Assistant", system-ui, sans-serif;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --color-primary: #a8a5ff;
+  --color-primary-darker: #b2aeff;
+  --color-primary-light: #4f4d6f;
+  --color-surface-high: #2e2d39;
+  --color-surface-mid: hsl(240 6% 10%);
+  --color-surface-low: hsl(240 8% 15%);
+  --color-on-surface: #e3e3e8;
+  --color-muted: #9a9aa6;
+  --color-danger: #ffa8a5;
+  --color-danger-text: #ffa8a5;
+  --color-border: #46464f;
+  --overlay: rgba(12, 12, 14, 0.65);
+
+  --bar-bg: #1e1e24;
+  --drop-fill: rgba(255, 255, 255, 0.04);
+  --drop-fill-hover: rgba(255, 255, 255, 0.08);
+  --drop-active: linear-gradient(180deg, rgba(56, 55, 72, 0.95) 0%, rgba(40, 39, 52, 0.95) 100%);
+  --drop-edge: rgba(255, 255, 255, 0.12);
+  --drop-rim: rgba(168, 165, 255, 0.22);
+  --drop-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px -6px rgba(0, 0, 0, 0.5);
+  --drop-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 24px -8px rgba(168, 165, 255, 0.28);
+  --glass: rgba(35, 35, 41, 0.86);
+  --glass-shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 24px 60px -12px rgba(0, 0, 0, 0.7);
+  --canvas: #121212;
+  --tab-hover: rgba(255, 255, 255, 0.05);
+  --tab-shadow: rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-surface-mid);
+  color: var(--color-on-surface);
+}
+
+.dsk-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ------------------------------------------------------------ tab bar */
+
+/* Liquid tabs: the active tab rises out of the bar and pours into the canvas
+   below. Soft convex top corners, concave "meniscus" curves where it meets
+   the content, filled with the canvas colour so tab + drawing are one surface. */
+
+.dsk-tabbar {
+  --flare: 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 46px;
+  padding: 0 10px;
+  background: var(--bar-bg);
+  user-select: none;
+  flex: none;
+}
+
+.dsk-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--flare);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.dsk-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.dsk-tab {
+  --fill: transparent;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  min-width: 104px;
+  max-width: 220px;
+  padding: 0 8px 2px 16px;
+  /* soft, water-like top: wide elliptical corners */
+  border-radius: 18px 18px 0 0 / 16px 16px 0 0;
+  background: var(--fill);
+  color: var(--color-muted);
+  font-size: 13px;
+  cursor: default;
+  flex: none;
+  transition:
+    background 0.25s ease,
+    color 0.2s ease;
+}
+
+/* concave inward curves at the base: the meniscus where tab meets canvas */
+.dsk-tab::before,
+.dsk-tab::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: var(--flare);
+  height: var(--flare);
+  pointer-events: none;
+  transition: background 0.25s ease;
+}
+
+.dsk-tab::before {
+  left: calc(var(--flare) * -1);
+  background: radial-gradient(
+    circle at 0 0,
+    transparent calc(var(--flare) - 0.5px),
+    var(--fill) var(--flare)
+  );
+}
+
+.dsk-tab::after {
+  right: calc(var(--flare) * -1);
+  background: radial-gradient(
+    circle at 100% 0,
+    transparent calc(var(--flare) - 0.5px),
+    var(--fill) var(--flare)
+  );
+}
+
+/* faint liquid on hover */
+.dsk-tab:hover {
+  --fill: var(--tab-hover);
+  color: var(--color-on-surface);
+  z-index: 1;
+}
+
+/* inactive tabs: a soft vertical divider that fades out near hovered/active tabs */
+.dsk-tab:not(.dsk-tab--active) + .dsk-tab:not(.dsk-tab--active):not(:hover) .dsk-tab__label::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 11px;
+  bottom: 11px;
+  width: 1px;
+  border-radius: 1px;
+  background: var(--color-border);
+  opacity: 0.6;
+}
+
+.dsk-tab--active,
+.dsk-tab--active:hover {
+  --fill: var(--canvas);
+  color: var(--color-on-surface);
+  z-index: 2;
+  /* subtle depth only above the surface, so the bottom stays seamless */
+  filter: drop-shadow(0 -1px 2px var(--tab-shadow));
+}
+
+.dsk-tab--home {
+  min-width: 0;
+  padding: 0 13px 2px;
+  justify-content: center;
+}
+
+.dsk-tab--home.dsk-tab--active {
+  color: var(--color-primary);
+}
+
+.dsk-tab--pinned {
+  min-width: 0;
+  padding: 0 12px;
+}
+
+.dsk-tab--pinned .dsk-tab__label {
+  max-width: 90px;
+}
+
+.dsk-tab--missing .dsk-tab__name {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.dsk-tab__pin {
+  display: flex;
+  color: var(--color-primary);
+}
+
+.dsk-tab__label {
+  position: static;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dsk-tab__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsk-tab__hint {
+  font-size: 11px;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+.dsk-tab__rename {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--color-on-surface);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  outline: 2px solid var(--color-primary);
+  padding: 2px 6px;
+}
+
+.dsk-tab__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin: 0 5px;
+  background: radial-gradient(circle at 35% 30%, #fff 0 18%, var(--color-primary) 45%);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+  flex: none;
+}
+
+.dsk-tab__ring {
+  width: 12px;
+  height: 12px;
+  margin: 0 3px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary-light);
+  border-top-color: var(--color-primary);
+  animation: dsk-spin 0.8s linear infinite;
+  flex: none;
+}
+
+.dsk-tab__saved {
+  display: flex;
+  color: var(--color-primary);
+  animation: dsk-fade 1.4s ease forwards;
+}
+
+.dsk-tab__alert {
+  display: flex;
+  padding: 2px;
+  border: none;
+  background: none;
+  color: var(--color-danger-text);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dsk-tab__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  opacity: 0;
+  cursor: pointer;
+  flex: none;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.dsk-tab:hover .dsk-tab__close,
+.dsk-tab--active .dsk-tab__close {
+  opacity: 0.9;
+}
+
+.dsk-tab__close:hover {
+  opacity: 1;
+  background: var(--color-surface-high);
+}
+
+/* plain icon buttons (new tab, pin): no frame, just the icon */
+.dsk-iconbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-on-surface);
+  opacity: 0.85;
+  cursor: pointer;
+  flex: none;
+  align-self: center;
+  transition: color 0.15s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dsk-iconbtn:hover {
+  opacity: 1;
+}
+
+.dsk-iconbtn:active {
+  transform: scale(0.9);
+}
+
+.dsk-iconbtn--on {
+  color: var(--color-primary);
+}
+
+.dsk-newtab {
+  margin-left: calc(var(--flare) * -0.5 + 4px);
+}
+
+/* empty title-bar space: drags the window (Chrome-style) */
+.dsk-drag {
+  flex: 1;
+  align-self: stretch;
+  min-width: 40px;
+}
+
+/* window controls, Windows 11 style */
+.dsk-winctl {
+  display: flex;
+  align-self: stretch;
+  margin-right: -10px;
+}
+
+.dsk-winctl button {
+  width: 46px;
+  border: none;
+  background: none;
+  color: var(--color-on-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: background 0.12s;
+}
+
+.dsk-winctl button:hover {
+  background: var(--tab-hover);
+}
+
+:root:not([data-theme="dark"]) .dsk-winctl button:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.dsk-winctl .dsk-winctl__close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+/* ------------------------------------------------------------ frames */
+
+.dsk-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.dsk-frames {
+  position: absolute;
+  inset: 0;
+}
+
+.dsk-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--canvas);
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.dsk-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  visibility: hidden;
+}
+
+.dsk-frame--active {
+  visibility: visible;
+}
+
+/* ------------------------------------------------------------ drop overlay */
+
+.dsk-drop {
+  position: fixed;
+  inset: 46px 0 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -12px;
+  border-radius: 20px;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.dsk-drop__card {
+  padding: 14px 22px;
+  border-radius: var(--radius-card);
+  background: var(--glass);
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: inset 0 1px 0 var(--drop-edge), var(--glass-shadow);
+  font-size: 15px;
+}
+
+/* ------------------------------------------------------------ dialogs */
+
+.dsk-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay);
+  backdrop-filter: blur(3px);
+  z-index: 100;
+  animation: dsk-fade-in 0.15s ease;
+}
+
+.dsk-modal {
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow: auto;
+  padding: 22px 24px 18px;
+  border-radius: var(--radius-card);
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid var(--drop-rim);
+  box-shadow: inset 0 1px 0 var(--drop-edge), var(--glass-shadow);
+  animation: dsk-drop-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dsk-modal--wide {
+  width: min(640px, calc(100vw - 32px));
+}
+
+.dsk-modal__title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.dsk-modal__body {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.dsk-modal__body p {
+  margin: 0 0 10px;
+}
+
+.dsk-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.dsk-muted {
+  color: var(--color-muted);
+}
+
+.dsk-empty {
+  padding: 18px;
+  text-align: center;
+  border-radius: 14px;
+  background: var(--drop-fill);
+  color: var(--color-muted);
+}
+
+.dsk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 11px;
+  border: 1px solid var(--drop-rim);
+  background: var(--drop-fill-hover);
+  box-shadow: inset 0 1px 0 var(--drop-edge);
+  color: var(--color-on-surface);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dsk-btn:hover {
+  filter: brightness(0.97);
+}
+
+.dsk-btn:active {
+  transform: scale(0.97);
+}
+
+.dsk-btn:focus-visible,
+.dsk-iconbtn:focus-visible,
+.dsk-tab__close:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.dsk-btn--primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 88%, #fff) 0%, var(--color-primary) 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px -6px var(--color-primary);
+}
+
+:root[data-theme="dark"] .dsk-btn--primary {
+  color: #121212;
+}
+
+.dsk-btn--danger {
+  color: var(--color-danger-text);
+}
+
+.dsk-btn--small {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
+  border-radius: 9px;
+}
+
+.dsk-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  font-size: 13px;
+}
+
+.dsk-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-muted);
+  padding: 0 10px;
+}
+
+.dsk-table td {
+  padding: 8px 10px;
+  background: var(--drop-fill);
+}
+
+.dsk-table td:first-child {
+  border-radius: 12px 0 0 12px;
+}
+
+.dsk-table td:last-child {
+  border-radius: 0 12px 12px 0;
+}
+
+.dsk-table__actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/* ------------------------------------------------------------ toasts */
+
+.dsk-toasts {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.dsk-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: var(--glass);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid var(--drop-rim);
+  box-shadow: inset 0 1px 0 var(--drop-edge), var(--glass-shadow);
+  font-size: 13px;
+  pointer-events: auto;
+  cursor: pointer;
+  animation: dsk-drop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dsk-toast--success svg {
+  color: var(--color-primary);
+}
+
+.dsk-toast--error svg {
+  color: var(--color-danger-text);
+}
+
+/* ------------------------------------------------------------ motion */
+
+@keyframes dsk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dsk-fade {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes dsk-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* a drop settling: slight overshoot */
+@keyframes dsk-drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,79 @@
+/* Presentation mode: Excalidraw UI hidden, a small HUD at the bottom. */
+
+body.dsk-presenting .excalidraw .layer-ui__wrapper,
+body.dsk-presenting .excalidraw .App-menu,
+body.dsk-presenting .excalidraw .ann-toggle,
+body.dsk-presenting .excalidraw .ann-palette,
+body.dsk-presenting .excalidraw .layer-ui__wrapper__footer {
+  display: none !important;
+}
+
+.dsk-present {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.dsk-present__hud {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border-radius: 16px;
+  transform: translate(-50%, 12px);
+  background: var(--island-bg-color, rgba(255, 255, 255, 0.92));
+  box-shadow: var(--shadow-island, 0 4px 18px rgba(0, 0, 0, 0.18));
+  color: var(--text-primary-color, #1b1b1f);
+  font-family: Assistant, system-ui, sans-serif;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dsk-present__hud--on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+.dsk-present__hud span {
+  display: flex;
+  gap: 8px;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.dsk-present__hud em {
+  font-style: normal;
+  opacity: 0.6;
+}
+
+.dsk-present__hud button {
+  min-width: 32px;
+  height: 30px;
+  border: none;
+  border-radius: 11px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.dsk-present__hud button:hover:not(:disabled) {
+  background: var(--button-hover-bg, rgba(0, 0, 0, 0.06));
+}
+
+.dsk-present__hud button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.dsk-present__hud .dsk-present__exit {
+  font-size: 13px;
+  padding: 0 12px;
+}

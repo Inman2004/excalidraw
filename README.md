@@ -1,124 +1,138 @@
-<a href="https://excalidraw.com/" target="_blank" rel="noopener">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" alt="Excalidraw" srcset="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github/excalidraw_github_cover_2_dark.png" />
-    <img alt="Excalidraw" src="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github/excalidraw_github_cover_2.png" />
-  </picture>
-</a>
-
-<h4 align="center">
-  <a href="https://excalidraw.com">Excalidraw Editor</a> |
-  <a href="https://plus.excalidraw.com/blog">Blog</a> |
-  <a href="https://docs.excalidraw.com">Documentation</a> |
-  <a href="https://plus.excalidraw.com">Excalidraw+</a>
-</h4>
-
 <div align="center">
-  <h2>
-    An open source virtual hand-drawn style whiteboard. </br>
-    Collaborative and end-to-end encrypted. </br>
-  <br />
-  </h2>
+  <img src="desktop/src-tauri/icons/128x128@2x.png" width="96" alt="Excalidraw Desktop icon" />
+  <h1>Excalidraw Desktop</h1>
+  <p><strong>The hand-drawn whiteboard you love, as a fast little Windows app.</strong><br/>
+  Tabs like a text editor. Files that don't get lost. Screenshots you can mark up in seconds.</p>
+
+  <p>
+    <a href="https://github.com/Inman2004/excalidraw/releases/latest"><img alt="Download for Windows" src="https://img.shields.io/badge/Download-Windows%20installer-6965db?style=for-the-badge&logo=windows" /></a>
+  </p>
+  <p>
+    <a href="https://github.com/Inman2004/excalidraw/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Inman2004/excalidraw?label=latest" /></a>
+    <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-blue.svg" /></a>
+  </p>
 </div>
 
-<br />
-<p align="center">
-  <a href="https://github.com/excalidraw/excalidraw/blob/master/LICENSE">
-    <img alt="Excalidraw is released under the MIT license." src="https://img.shields.io/badge/license-MIT-blue.svg"  /></a>
-  <a href="https://www.npmjs.com/package/@excalidraw/excalidraw">
-    <img alt="npm downloads/month" src="https://img.shields.io/npm/dm/@excalidraw/excalidraw"  /></a>
-  <a href="https://docs.excalidraw.com/docs/introduction/contributing">
-    <img alt="PRs welcome!" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat"  /></a>
-  <a href="https://discord.gg/UexuTaE">
-    <img alt="Chat on Discord" src="https://img.shields.io/discord/723672430744174682?color=738ad6&label=Chat%20on%20Discord&logo=discord&logoColor=ffffff&widget=false"/></a>
-  <a href="https://deepwiki.com/excalidraw/excalidraw">
-    <img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg" /></a>
-  <a href="https://twitter.com/excalidraw">
-    <img alt="Follow Excalidraw on Twitter" src="https://img.shields.io/twitter/follow/excalidraw.svg?label=follow+@excalidraw&style=social&logo=twitter"/></a>
-</p>
+---
 
-<div align="center">
-  <figure>
-    <a href="https://excalidraw.com" target="_blank" rel="noopener">
-      <img src="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github%2Fproduct_showcase.png" alt="Product showcase" />
-    </a>
-    <figcaption>
-      <p align="center">
-        Create beautiful hand-drawn like diagrams, wireframes, or whatever you like.
-      </p>
-    </figcaption>
-  </figure>
-</div>
+## Why this exists
 
-## Features
+I use [Excalidraw](https://excalidraw.com) every day. It's the quickest way I know to get an idea out of
+my head and onto a screen. But living in a browser tab has some rough edges: drawings sit in browser storage
+where one "clear site data" can wipe them, there's no proper Open/Save to real files, and juggling five
+diagrams means five browser tabs that all look the same.
 
-The Excalidraw editor (npm package) supports:
+So I wrapped it in a desktop app that behaves the way Notepad or VS Code do. Open a `.excalidraw` file,
+it shows up in a tab. Hit Ctrl+S, it's saved to that file. Close the app with unsaved changes and they're
+all still there next time. **The drawing engine is the real Excalidraw, unmodified**, so everything you
+already know still works and your files open fine on excalidraw.com too.
 
-- 💯&nbsp;Free & open-source.
-- 🎨&nbsp;Infinite, canvas-based whiteboard.
-- ✍️&nbsp;Hand-drawn like style.
-- 🌓&nbsp;Dark mode.
-- 🏗️&nbsp;Customizable.
-- 📷&nbsp;Image support.
-- 😀&nbsp;Shape libraries support.
-- 🌐&nbsp;Localization (i18n) support.
-- 🖼️&nbsp;Export to PNG, SVG & clipboard.
-- 💾&nbsp;Open format - export drawings as an `.excalidraw` json file.
-- ⚒️&nbsp;Wide range of tools - rectangle, circle, diamond, arrow, line, free-draw, eraser...
-- ➡️&nbsp;Arrow-binding & labeled arrows.
-- 🔙&nbsp;Undo / Redo.
-- 🔍&nbsp;Zoom and panning support.
+## Get it
 
-## Excalidraw.com
+1. Grab **`Excalidraw_x.y.z_x64-setup.exe`** from the [latest release](https://github.com/Inman2004/excalidraw/releases/latest).
+2. Run it. It installs per user, so you don't need admin rights.
+3. Double-click any `.excalidraw` file and it opens right in the app.
 
-The app hosted at [excalidraw.com](https://excalidraw.com) is a minimal showcase of what you can build with Excalidraw. Its [source code](https://github.com/excalidraw/excalidraw/tree/master/excalidraw-app) is part of this repository as well, and the app features:
+> **Heads up:** the installer isn't code-signed yet, so Windows SmartScreen may say "Windows protected
+> your PC". Click **More info → Run anyway**. Prefer to build it yourself? See [Build from source](#build-from-source).
 
-- 📡&nbsp;PWA support (works offline).
-- 🤼&nbsp;Real-time collaboration.
-- 🔒&nbsp;End-to-end encryption.
-- 💾&nbsp;Local-first support (autosaves to the browser).
-- 🔗&nbsp;Shareable links (export to a readonly link you can share with others).
+It needs Windows 10 or 11 with the WebView2 runtime. Windows 11 already has it, and the installer fetches it on Windows 10 if it's missing.
 
-We'll be adding these features as drop-in plugins for the npm package in the future.
+## What you get
 
-## Quick start
+### 🗂️ Tabs, done properly
+- Open as many drawings as you like, each in its own tab that sits right in the title bar, Chrome-style.
+- **Ctrl+T** new, **Ctrl+W** close, **Ctrl+Shift+T** brings back the tab you just closed.
+- **Ctrl+Tab** / **Ctrl+1…9** to hop around. Drag tabs to reorder, double-click to rename the file, right-click to pin.
+- Each tab keeps its **own undo history**, even when you switch away and come back.
 
-**Note:** following instructions are for installing the Excalidraw [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw) when integrating Excalidraw into your own app. To run the repository locally for development, please refer to our [Development Guide](https://docs.excalidraw.com/docs/introduction/development).
+### 🛟 Your work doesn't vanish
+- **Auto-save to disk** (on by default) writes your file a second or two after you stop drawing.
+- **Crash-proof recovery.** Every change is also snapshotted about once a second. Pull the plug, and the
+  next launch brings back every tab, saved or not. Leftovers show up in the **Recovery Center**.
+- Saves are atomic: the app writes to a temp file and then swaps it in, so a crash mid-save never leaves you with half a file.
+- **Edited the file somewhere else?** If you had no unsaved changes, the app quietly reloads it. If you did,
+  it asks: keep yours, load theirs, or save yours as a copy.
+- **File history** (Ctrl+Shift+H) keeps the last 10 versions of each file. Restoring opens the old
+  version in a new tab, so nothing is overwritten until you decide.
 
-Use `npm` or `yarn` to install the package.
+### ✍️ Mark up screenshots in seconds
+Press **Ctrl+Shift+A** (or the **Annotate** button) and:
+- **Callouts:** click the spot, click where the label goes, type, press Enter. You get a numbered label
+  (`01`, `02`…) with an arrow pointing exactly where you clicked. It's grouped, so it moves and undoes as one piece.
+- **Highlight**, **box**, **ellipse** and **measure** (it even reports real image pixels when you measure on a photo).
+- Four colours, keys **1–5** to switch tools, **C** to cycle colours, hold **Space** to pan.
+- **Ctrl+Shift+V** with a screenshot on your clipboard opens it in a new tab, locked as the background,
+  with annotate mode already on.
+- The **Callouts** panel lists every callout: rename, recolour, delete, renumber, or
+  **copy them all as a text report** for a bug ticket or review email.
+
+### 📤 Export without fuss
+**Ctrl+Shift+E** opens a proper export dialog with a live preview:
+PNG, SVG or JPEG; the whole drawing, just the selection, or a single frame; 1–4× scale; transparent or
+solid background; dark mode; and optionally the scene embedded so the image opens again as an editable
+drawing. Save it to a file or copy it straight to the clipboard.
+
+### 🎞️ Present from your drawing
+Draw a few **frames** (F), then press **F5**. The app goes fullscreen and steps through them one by one
+with ← → or Space. The **Frames** panel lets you reorder slides without touching the drawing, or apply
+that order to the file when you're happy.
+
+### ⚡ Little things that add up
+- **Ctrl+Alt+P:** jump to any open tab or recent file by typing part of its name or folder.
+- **Ctrl+Shift+F:** search text across *all* open drawings and jump straight to the match.
+  (Ctrl+F still searches just the current one.)
+- **Templates:** start from a flowchart, a wireframe (desktop and mobile frames), or an annotation board.
+- **Drag and drop anything:** drawings open in tabs, `.excalidrawlib` files go into your library,
+  images land exactly where you drop them.
+- Your **library is shared** across every tab and kept between sessions.
+- Light, dark, or follow Windows. **Always on top** for when you're sketching next to a video call.
+- Every desktop command is also in Excalidraw's own command palette (**Ctrl+/**).
+- No pop-up boxes anywhere. Every dialog is part of the app and matches Excalidraw's look.
+
+## Keyboard cheat sheet
+
+| Shortcut | What it does |
+| --- | --- |
+| Ctrl+T / Ctrl+N | New tab |
+| Ctrl+O | Open files |
+| Ctrl+S / Ctrl+Shift+S | Save / Save as |
+| Ctrl+W / Ctrl+Shift+T | Close tab / reopen closed tab |
+| Ctrl+Tab, Ctrl+1…9 | Switch tabs |
+| Ctrl+Alt+P | Quick switch (tabs and recent files) |
+| Ctrl+Shift+F | Find in all drawings |
+| Ctrl+Shift+E | Export image |
+| Ctrl+Shift+A | Annotate mode |
+| Ctrl+Shift+V | Annotate the image on the clipboard |
+| Ctrl+Shift+H | File history |
+| F5 | Present frames |
+| Ctrl+/ | Command palette |
+
+## Build from source
+
+You'll need [Node.js](https://nodejs.org) 20+, [Yarn](https://yarnpkg.com) (for the monorepo) and
+[Rust](https://rustup.rs) with the MSVC toolchain.
 
 ```bash
-npm install react react-dom @excalidraw/excalidraw
-# or
-yarn add react react-dom @excalidraw/excalidraw
+git clone https://github.com/Inman2004/excalidraw.git
+cd excalidraw
+yarn install
+cd desktop
+npm install
+npx tauri dev     # run it
+npx tauri build   # make the installer (src-tauri/target/release/bundle/nsis)
 ```
 
-Check out our [documentation](https://docs.excalidraw.com/docs/@excalidraw/excalidraw/installation) for more details!
+The app lives in [`desktop/`](desktop). It builds Excalidraw straight from this monorepo's source
+(pinned commit `e1b7aacb3`) without changing a single line of it. Curious how it fits together, with
+one isolated editor per tab, Rust-side file safety, and so on? See [`desktop/NOTES.md`](desktop/NOTES.md).
 
-## Contributing
+## Credits
 
-- Missing something or found a bug? [Report here](https://github.com/excalidraw/excalidraw/issues).
-- Want to contribute? Check out our [contribution guide](https://docs.excalidraw.com/docs/introduction/contributing) or let us know on [Discord](https://discord.gg/UexuTaE).
-- Want to help with translations? See the [translation guide](https://docs.excalidraw.com/docs/introduction/contributing#translating).
+- **[Excalidraw](https://github.com/excalidraw/excalidraw)**: the whole drawing experience. MIT licensed.
+  All the credit for the canvas goes to that team; this project just gives it a desktop home.
+- **[Solar Icons](https://www.figma.com/community/file/1166831539721848736)** by 480 Design, CC BY 4.0.
+- **[Tauri](https://tauri.app)** for the tiny, fast native shell.
+- Built with ♥ by **moon**.
 
-## Integrations
-
-- [VScode extension](https://marketplace.visualstudio.com/items?itemName=pomdtr.excalidraw-editor)
-- [npm package](https://www.npmjs.com/package/@excalidraw/excalidraw)
-
-## Who's integrating Excalidraw
-
-[Google Cloud](https://googlecloudcheatsheet.withgoogle.com/architecture) • [Meta](https://meta.com/) • [CodeSandbox](https://codesandbox.io/) • [Obsidian Excalidraw](https://github.com/zsviczian/obsidian-excalidraw-plugin) • [Replit](https://replit.com/) • [Slite](https://slite.com/) • [Notion](https://notion.so/) • [HackerRank](https://www.hackerrank.com/) • and many others
-
-## Sponsors & support
-
-If you like the project, you can become a sponsor at [Open Collective](https://opencollective.com/excalidraw) or use [Excalidraw+](https://plus.excalidraw.com/).
-
-## Thank you for supporting Excalidraw
-
-[<img src="https://opencollective.com/excalidraw/tiers/sponsors/0/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/0/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/1/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/1/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/2/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/2/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/3/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/3/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/4/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/4/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/5/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/5/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/6/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/6/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/7/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/7/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/8/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/8/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/9/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/9/website) [<img src="https://opencollective.com/excalidraw/tiers/sponsors/10/avatar.svg?avatarHeight=120"/>](https://opencollective.com/excalidraw/tiers/sponsors/10/website)
-
-<a href="https://opencollective.com/excalidraw#category-CONTRIBUTE" target="_blank"><img src="https://opencollective.com/excalidraw/tiers/backers.svg?avatarHeight=32"/></a>
-
-Last but not least, we're thankful to these companies for offering their services for free:
-
-[![Vercel](./.github/assets/vercel.svg)](https://vercel.com) [![Sentry](./.github/assets/sentry.svg)](https://sentry.io) [![Crowdin](./.github/assets/crowdin.svg)](https://crowdin.com)
+Found a bug or have an idea? [Open an issue](https://github.com/Inman2004/excalidraw/issues). I'd love to hear how you use it.

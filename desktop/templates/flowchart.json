@@ -1,0 +1,168 @@
+{
+ "name": "Flowchart",
+ "description": "Start, steps, a decision and a loop",
+ "elements": [
+  {
+   "type": "ellipse",
+   "id": "start",
+   "x": 0,
+   "y": 0,
+   "width": 180,
+   "height": 70,
+   "backgroundColor": "#b2f2bb",
+   "fillStyle": "solid",
+   "label": {
+    "text": "Start"
+   },
+   "roughness": 1,
+   "strokeWidth": 2
+  },
+  {
+   "type": "rectangle",
+   "id": "step1",
+   "x": -20,
+   "y": 140,
+   "width": 220,
+   "height": 80,
+   "backgroundColor": "#a5d8ff",
+   "fillStyle": "solid",
+   "roundness": {
+    "type": 3
+   },
+   "label": {
+    "text": "Do something"
+   },
+   "roughness": 1,
+   "strokeWidth": 2
+  },
+  {
+   "type": "diamond",
+   "id": "check",
+   "x": -10,
+   "y": 290,
+   "width": 200,
+   "height": 130,
+   "backgroundColor": "#ffec99",
+   "fillStyle": "solid",
+   "label": {
+    "text": "Done?"
+   },
+   "roughness": 1,
+   "strokeWidth": 2
+  },
+  {
+   "type": "rectangle",
+   "id": "fix",
+   "x": 300,
+   "y": 315,
+   "width": 200,
+   "height": 80,
+   "backgroundColor": "#ffc9c9",
+   "fillStyle": "solid",
+   "roundness": {
+    "type": 3
+   },
+   "label": {
+    "text": "Fix and retry"
+   },
+   "roughness": 1,
+   "strokeWidth": 2
+  },
+  {
+   "type": "ellipse",
+   "id": "end",
+   "x": 0,
+   "y": 500,
+   "width": 180,
+   "height": 70,
+   "backgroundColor": "#b2f2bb",
+   "fillStyle": "solid",
+   "label": {
+    "text": "End"
+   },
+   "roughness": 1,
+   "strokeWidth": 2
+  },
+  {
+   "type": "arrow",
+   "x": 90,
+   "y": 72,
+   "width": 0,
+   "height": 66,
+   "start": {
+    "id": "start"
+   },
+   "end": {
+    "id": "step1"
+   },
+   "roughness": 1,
+   "strokeWidth": 2
+  },
+  {
+   "type": "arrow",
+   "x": 90,
+   "y": 222,
+   "width": 0,
+   "height": 66,
+   "start": {
+    "id": "step1"
+   },
+   "end": {
+    "id": "check"
+   },
+   "roughness": 1,
+   "strokeWidth": 2
+  },
+  {
+   "type": "arrow",
+   "x": 192,
+   "y": 355,
+   "width": 106,
+   "height": 0,
+   "start": {
+    "id": "check"
+   },
+   "end": {
+    "id": "fix"
+   },
+   "label": {
+    "text": "No"
+   },
+   "roughness": 1,
+   "strokeWidth": 2
+  },
+  {
+   "type": "arrow",
+   "x": 400,
+   "y": 313,
+   "width": -198,
+   "height": -133,
+   "start": {
+    "id": "fix"
+   },
+   "end": {
+    "id": "step1"
+   },
+   "roughness": 1,
+   "strokeWidth": 2
+  },
+  {
+   "type": "arrow",
+   "x": 90,
+   "y": 422,
+   "width": 0,
+   "height": 76,
+   "start": {
+    "id": "check"
+   },
+   "end": {
+    "id": "end"
+   },
+   "label": {
+    "text": "Yes"
+   },
+   "roughness": 1,
+   "strokeWidth": 2
+  }
+ ]
+}
