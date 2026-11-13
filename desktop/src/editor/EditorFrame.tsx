@@ -450,7 +450,12 @@ export const EditorFrame = () => {
         case "skeleton":
           if (api) {
             const els = convertToExcalidrawElements(msg.elements as any);
-            api.updateScene({ elements: els, captureUpdate: CaptureUpdateAction.NEVER });
+            // appended, never replacing: a template only ever fills an empty tab,
+            // but nothing on the canvas may be lost if that ever changes
+            api.updateScene({
+              elements: [...api.getSceneElementsIncludingDeleted(), ...els],
+              captureUpdate: CaptureUpdateAction.NEVER,
+            });
             api.history.clear();
             requestAnimationFrame(() =>
               api.setViewport({ target: els, fit: "scale-down", animation: false }),
