@@ -2,10 +2,13 @@
 // works on the live scene through Excalidraw's public API.
 import {
   CaptureUpdateAction,
+  restoreElements,
   convertToExcalidrawElements,
   exportScene,
   newElementWith,
 } from "@excalidraw/excalidraw";
+
+import { syncMovedIndices } from "@excalidraw/element";
 
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
@@ -234,11 +237,17 @@ const applyChanges = (
     byId.delete(el.id);
   }
   // brand-new elements (regenerated labels) go right after their container
+  const added: ExcalidrawElement[] = [];
   byId.forEach((el) => {
     const container = (el as any).containerId;
     const i = next.findIndex((e) => e.id === container);
     next.splice(i >= 0 ? i + 1 : next.length, 0, el);
+    added.push(el);
   });
+  // give inserted elements a fractional index that fits their new position
+  if (added.length) {
+    syncMovedIndices(next, new Map(added.map((el) => [el.id, el])) as any);
+  }
   api.updateScene({ elements: next, captureUpdate: CaptureUpdateAction.IMMEDIATELY });
 };
 
@@ -349,8 +358,15 @@ export const handleRequest = async (
       const rest = all.filter((el) => !inBlock(el));
       const before = all.slice(0, firstAt).filter((el) => !inBlock(el));
       const after = rest.slice(before.length);
+      // moved elements are copies so the live scene isn't mutated before the
+      // update; they get fractional indices that match the new order
+      const moved = blocks.flat().map((el) => ({ ...el }) as ExcalidrawElement);
+      const next = [...before, ...moved, ...after];
+      syncMovedIndices(next, new Map(moved.map((el) => [el.id, el])) as any);
       api.updateScene({
-        elements: [...before, ...blocks.flat(), ...after],
+        elements: next.map((el) =>
+          moved.includes(el) ? newElementWith(el, { index: el.index }, true) : el,
+        ),
         captureUpdate: CaptureUpdateAction.IMMEDIATELY,
       });
       return true;
@@ -417,5 +433,18 @@ export const handleRequest = async (
       return renumber(api);
     case "report":
       return calloutReportText(api.getSceneElements());
+    case "render": {
+      const data = JSON.parse(req.json);
+      const elements = restoreElements(data.elements ?? [], null).filter((el) => !el.isDeleted);
+      if (!elements.length) {
+        return null;
+      }
+      const canvas = await exportScene({
+        data: { elements: elements as any, appState: data.appState ?? {}, files: data.files ?? {} },
+        type: "canvas",
+        config: { maxWidthOrHeight: req.max, padding: 8 },
+      });
+      return canvas.toDataURL("image/png");
+    }
   }
 };

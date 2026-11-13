@@ -334,8 +334,16 @@ export const activateTab = async (tabId: string) => {
         : s2.panel,
   }));
   if (!getState().mounted.includes(doc.docId)) {
-    setState((s2) => ({ loading: { ...s2.loading, [doc.docId]: true } }));
-    await prepareLoad(doc);
+    // concurrent activations share one preparation: a second prepareLoad
+    // finishing after the editor loaded would leave the tab "opening" forever
+    let preparing = preparingLoads.get(doc.docId);
+    if (!preparing) {
+      setState((s2) => ({ loading: { ...s2.loading, [doc.docId]: true } }));
+      preparing = prepareLoad(doc).finally(() => preparingLoads.delete(doc.docId));
+      preparingLoads.set(doc.docId, preparing);
+      watchLoading(doc.docId);
+    }
+    await preparing;
   }
   touchMounted(doc.docId);
   const r = rt(doc.docId);
@@ -437,6 +445,70 @@ const handleSnapshot = (docId: string, snap: Snapshot) => {
   scheduleSessionSave();
 };
 
+const preparingLoads = new Map<string, Promise<unknown>>();
+
+/**
+ * Safety net: an editor that answers but whose "loaded" message was missed
+ * (e.g. its page reloaded mid-handshake) is treated as loaded.
+ */
+const watchLoading = (docId: string) => {
+  window.setTimeout(async () => {
+    if (!getState().loading[docId] || !hasFrame(docId)) {
+      return;
+    }
+    const snap = await requestSnapshot(docId, 3000);
+    if (snap && getState().loading[docId]) {
+      onLoaded(docId, snap);
+    } else if (getState().loading[docId]) {
+      watchLoading(docId);
+    }
+  }, 6000);
+};
+
+/** The editor has its scene: settle status, flush queued work, drop the overlay. */
+const onLoaded = (docId: string, baseline: Snapshot) => {
+  const doc = docOf(docId);
+  if (!doc) {
+    return;
+  }
+  const r = rt(docId);
+  const hash = hashText(baseline.json);
+  r.latest = baseline;
+  const fromDisk = r.pendingLoad?.fromDisk ?? false;
+  if (fromDisk) {
+    updateDoc(docId, {
+      currentHash: hash,
+      savedHash: hash,
+      status: doc.status === "missing" ? "missing" : "clean",
+      view: baseline.view,
+    });
+  } else {
+    const status = !doc.path
+      ? hasElements(baseline.json)
+        ? "dirty"
+        : "clean"
+      : doc.status === "conflict" || doc.status === "missing"
+      ? doc.status
+      : hash === doc.savedHash
+      ? "clean"
+      : "dirty";
+    updateDoc(docId, { currentHash: hash, status, view: baseline.view });
+  }
+  r.pendingLoad = null;
+  r.afterLoad.splice(0).forEach((m) => sendToFrame(docId, m));
+  loadWaiters.get(docId)?.splice(0).forEach((fn) => fn());
+  setState((s2) => {
+    const loading = { ...s2.loading };
+    delete loading[docId];
+    return { loading };
+  });
+  // the first focus request may have arrived before the editor existed
+  if (getState().tabs.find((t) => t.tabId === getState().activeTabId)?.docId === docId) {
+    sendToFrame(docId, { type: "focus" });
+  }
+  updateTitle();
+};
+
 const onFrameMessage = (docId: string, msg: FromFrame) => {
   const doc = docOf(docId);
   if (!doc) {
@@ -446,45 +518,9 @@ const onFrameMessage = (docId: string, msg: FromFrame) => {
     case "ready":
       frameMounted(docId);
       break;
-    case "loaded": {
-      const r = rt(docId);
-      const hash = hashText(msg.baseline.json);
-      r.latest = msg.baseline;
-      const fromDisk = r.pendingLoad?.fromDisk ?? false;
-      if (fromDisk) {
-        updateDoc(docId, {
-          currentHash: hash,
-          savedHash: hash,
-          status: doc.status === "missing" ? "missing" : "clean",
-          view: msg.baseline.view,
-        });
-      } else {
-        const status = !doc.path
-          ? hasElements(msg.baseline.json)
-            ? "dirty"
-            : "clean"
-          : doc.status === "conflict" || doc.status === "missing"
-          ? doc.status
-          : hash === doc.savedHash
-          ? "clean"
-          : "dirty";
-        updateDoc(docId, { currentHash: hash, status, view: msg.baseline.view });
-      }
-      r.pendingLoad = null;
-      r.afterLoad.splice(0).forEach((m) => sendToFrame(docId, m));
-      loadWaiters.get(docId)?.splice(0).forEach((fn) => fn());
-      setState((s2) => {
-        const loading = { ...s2.loading };
-        delete loading[docId];
-        return { loading };
-      });
-      // the first focus request may have arrived before the editor existed
-      if (getState().tabs.find((t) => t.tabId === getState().activeTabId)?.docId === docId) {
-        sendToFrame(docId, { type: "focus" });
-      }
-      updateTitle();
+    case "loaded":
+      onLoaded(docId, msg.baseline);
       break;
-    }
     case "changed":
       if (doc.status === "clean" || doc.status === "saved") {
         updateDoc(docId, { status: "dirty" });

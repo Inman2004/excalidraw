@@ -5,13 +5,27 @@ import { searchElements } from "../common/search";
 
 import { activateTab, docSceneJSON, openPaths, revealInDoc, tabLabel } from "./controller";
 import { hasFrame, requestFrame } from "./frames";
+import { native } from "./native";
 import { Palette, fuzzyScore, highlight } from "./Palette";
+import { Thumb, useThumbnail } from "./thumbnails";
 import { getState, setState, useStore } from "./store";
 
 import type { PaletteItem } from "./Palette";
 import type { SearchHit } from "../common/protocol";
 
 const close = () => setState({ panel: null });
+
+const DocThumb = ({ docId, hash }: { docId: string; hash: string }) => (
+  <Thumb src={useThumbnail(`doc:${docId}:${hash}`, () => docSceneJSON(docId))} />
+);
+
+const FileThumb = ({ path }: { path: string }) => (
+  <Thumb
+    src={useThumbnail(`file:${path.toLowerCase()}`, () =>
+      native.docOpen(path).then((o) => o.text, () => null),
+    )}
+  />
+);
 
 /** Ctrl+Alt+P: open tabs and recent files by name or folder. */
 export const QuickSwitcher = () => {
@@ -44,6 +58,7 @@ export const QuickSwitcher = () => {
         key: `tab:${t.tabId}`,
         group: "Open tabs",
         icon: FilesIcon,
+        media: <DocThumb docId={doc.docId} hash={doc.currentHash ?? ""} />,
         title: highlight(name, query),
         subtitle: doc.path ?? "Not saved yet",
         badge: t.tabId === activeTabId ? "current" : doc.status === "dirty" ? "unsaved" : undefined,
@@ -65,6 +80,7 @@ export const QuickSwitcher = () => {
         key: `recent:${r.path}`,
         group: "Recent files",
         icon: missing ? MissingIcon : RecentIcon,
+        media: missing ? undefined : <FileThumb path={r.path} />,
         title: highlight(r.name, query),
         subtitle: r.path,
         badge: missing ? "missing" : r.pinnedRecent ? "pinned" : undefined,

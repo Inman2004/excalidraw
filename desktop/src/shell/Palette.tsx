@@ -9,6 +9,8 @@ export type PaletteItem = {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   icon?: IconType;
+  /** shown instead of the icon (e.g. a thumbnail) */
+  media?: React.ReactNode;
   badge?: string;
   group?: string;
   disabled?: boolean;
@@ -116,7 +118,7 @@ export const Palette = ({
                   onMouseMove={() => setActive(i)}
                   onClick={() => pick(i)}
                 >
-                  {item.icon && <Icon icon={item.icon} />}
+                  {item.media ?? (item.icon && <Icon icon={item.icon} />)}
                   <span className="dsk-palette__text">
                     <span className="dsk-palette__title">{item.title}</span>
                     {item.subtitle && <span className="dsk-palette__sub">{item.subtitle}</span>}

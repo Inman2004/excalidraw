@@ -89,6 +89,20 @@ export const broadcast = (msg: ToFrame, exceptDocId?: string) => {
 
 export const hasFrame = (docId: string) => frames.has(docId);
 
+/** A frame that is ready to work (prefers `preferred`), for render jobs. */
+export const readyFrame = (preferred?: string | null) => {
+  const p = preferred ? frames.get(preferred) : undefined;
+  if (p?.ready) {
+    return p.docId;
+  }
+  for (const f of frames.values()) {
+    if (f.ready) {
+      return f.docId;
+    }
+  }
+  return null;
+};
+
 /** Fresh serialization of the editor; null when the frame is gone or silent. */
 export const requestSnapshot = (docId: string, timeoutMs = 4000) =>
   new Promise<Snapshot | null>((resolve) => {

@@ -54,7 +54,7 @@ It needs Windows 10 or 11 with the WebView2 runtime. Windows 11 already has it, 
 - **Edited the file somewhere else?** If you had no unsaved changes, the app quietly reloads it. If you did,
   it asks: keep yours, load theirs, or save yours as a copy.
 - **File history** (Ctrl+Shift+H) keeps the last 10 versions of each file. Restoring opens the old
-  version in a new tab, so nothing is overwritten until you decide.
+  version in a new tab, so nothing is overwritten until you decide. Each version shows a thumbnail, so you can spot the right one at a glance.
 
 ### ✍️ Mark up screenshots in seconds
 Press **Ctrl+Shift+A** (or the **Annotate** button) and:
@@ -79,7 +79,7 @@ with ← → or Space. The **Frames** panel lets you reorder slides without touc
 that order to the file when you're happy.
 
 ### ⚡ Little things that add up
-- **Ctrl+Alt+P:** jump to any open tab or recent file by typing part of its name or folder.
+- **Ctrl+Alt+P:** jump to any open tab or recent file by typing part of its name or folder, with a little preview of each drawing.
 - **Ctrl+Shift+F:** search text across *all* open drawings and jump straight to the match.
   (Ctrl+F still searches just the current one.)
 - **Templates:** start from a flowchart, a wireframe (desktop and mobile frames), or an annotation board.

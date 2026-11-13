@@ -159,7 +159,9 @@ export type FrameRequest =
   | { op: "callout-edit"; groupId: string; label?: string; color?: string; remove?: boolean }
   | { op: "callout-reveal"; groupId: string; target?: boolean }
   | { op: "callouts-renumber" }
-  | { op: "report" };
+  | { op: "report" }
+  /** render any scene JSON to a small PNG data URL (thumbnails) */
+  | { op: "render"; json: string; max: number };
 
 /** Fast non-crypto string hash (cyrb53) for change detection. */
 export const hashText = (text: string, seed = 0) => {

@@ -12,6 +12,7 @@ import { ExportDialog } from "./ExportDialog";
 import { baseName, native } from "./native";
 import { setState, toast, useStore } from "./store";
 import { GlobalSearch, QuickSwitcher } from "./Switchers";
+import { Thumb, useThumbnail } from "./thumbnails";
 import { Modal } from "./ui/Dialogs";
 
 import type { BackupEntry } from "./native";
@@ -36,6 +37,15 @@ const ago = (ms: number) => {
 
 const kb = (n: number) =>
   n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
+
+const BackupThumb = ({ path, id }: { path: string; id: string }) => (
+  <Thumb
+    className="dsk-thumb--lg"
+    src={useThumbnail(`backup:${path.toLowerCase()}:${id}`, () =>
+      native.backupRead(path, id).catch(() => null),
+    )}
+  />
+);
 
 const HistoryDialog = ({ docId }: { docId: string }) => {
   const doc = useStore((s) => s.docs[docId]);
@@ -95,6 +105,7 @@ const HistoryDialog = ({ docId }: { docId: string }) => {
         <table className="dsk-table">
           <thead>
             <tr>
+              <th />
               <th>When</th>
               <th>Why</th>
               <th>Size</th>
@@ -104,6 +115,9 @@ const HistoryDialog = ({ docId }: { docId: string }) => {
           <tbody>
             {list.map((b) => (
               <tr key={b.id}>
+                <td className="dsk-table__thumb">
+                  <BackupThumb path={doc!.path!} id={b.id} />
+                </td>
                 <td title={new Date(b.createdMs).toLocaleString()}>{ago(b.createdMs)}</td>
                 <td>{REASONS[b.reason] ?? b.reason}</td>
                 <td>{kb(b.size)}</td>
