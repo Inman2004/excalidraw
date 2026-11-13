@@ -10,7 +10,7 @@ import {
   TrashIcon,
 } from "../common/Icon";
 
-import { getFrameOrder, setFrameOrder, startPresentation } from "./controller";
+import { getFrameOrder, setFrameOrder, startPresentation, whenLoaded } from "./controller";
 import { requestFrame } from "./frames";
 import { native } from "./native";
 import { setState, toast, useStore } from "./store";
@@ -58,6 +58,8 @@ const Drawer = ({
 const useReorder = <T extends { id: string }>(
   items: T[],
   onChange: (next: T[]) => void,
+  /** once per drag, with the final order */
+  onDone: (final: T[]) => void,
 ) => {
   const [dragId, setDragId] = useState<string | null>(null);
   const onDragStart = (id: string) => (e: React.DragEvent) => {
@@ -80,7 +82,12 @@ const useReorder = <T extends { id: string }>(
     next.splice(to, 0, moved);
     onChange(next);
   };
-  const onDragEnd = () => setDragId(null);
+  const onDragEnd = () => {
+    if (dragId) {
+      onDone(items);
+    }
+    setDragId(null);
+  };
   return { dragId, onDragStart, onDragOver, onDragEnd };
 };
 
@@ -95,7 +102,10 @@ export const FrameNavigator = ({ docId }: { docId: string }) => {
 
   const load = useCallback(async () => {
     try {
+      // the drawing may still be loading (e.g. right after a tab switch)
+      await whenLoaded(docId);
       const rows = await requestFrame<FrameRow[]>(docId, { op: "frames", thumbs: true });
+      setError(null);
       const order = await getFrameOrder(docId);
       setNatural(rows.map((r) => r.id));
       if (order?.length) {
@@ -117,12 +127,18 @@ export const FrameNavigator = ({ docId }: { docId: string }) => {
     void load();
   }, [load, status]);
 
-  const reorder = useReorder(frames ?? [], (next) => {
-    setFrames(next);
-    const isCustom = next.some((r, i) => r.id !== natural[i]);
-    setCustom(isCustom);
-    void setFrameOrder(docId, isCustom ? next.map((r) => r.id) : null);
-  });
+  const reorder = useReorder(
+    frames ?? [],
+    (next) => {
+      setFrames(next);
+      setCustom(next.some((r, i) => r.id !== natural[i]));
+    },
+    // persist once, when the drag ends
+    (final) => {
+      const isCustom = final.some((r, i) => r.id !== natural[i]);
+      void setFrameOrder(docId, isCustom ? final.map((r) => r.id) : null);
+    },
+  );
 
   const apply = async () => {
     if (!frames) {
@@ -306,7 +322,8 @@ export const AnnotationNavigator = ({ docId }: { docId: string }) => {
   const hash = useStore((s) => s.docs[docId]?.currentHash);
 
   const load = useCallback(() => {
-    requestFrame<CalloutInfo[]>(docId, { op: "callouts" })
+    whenLoaded(docId)
+      .then(() => requestFrame<CalloutInfo[]>(docId, { op: "callouts" }))
       .then((l) => {
         setList(l);
         setError(null);

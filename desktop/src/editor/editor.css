@@ -44,7 +44,9 @@ body,
 .ann-overlay {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  /* above the canvas (2), below Excalidraw's UI (4): menu, zoom and undo
+     stay clickable while annotating */
+  z-index: 3;
   cursor: crosshair;
   touch-action: none;
 }

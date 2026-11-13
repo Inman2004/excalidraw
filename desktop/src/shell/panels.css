@@ -237,7 +237,8 @@
 
 .dsk-drawer {
   position: absolute;
-  top: 64px;
+  /* below the tab bar and Excalidraw's top toolbar / top-right buttons */
+  top: 104px;
   right: 12px;
   bottom: 12px;
   width: 300px;
@@ -275,6 +276,7 @@
 
 .dsk-drawer__foot {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 10px 12px;
   border-top: 1px solid var(--drop-rim);
@@ -485,4 +487,9 @@
 .dsk-tpl__desc {
   font-size: 12px;
   color: var(--color-muted);
+}
+
+.dsk-drawer__foot .dsk-btn {
+  white-space: nowrap;
+  padding: 0 12px;
 }

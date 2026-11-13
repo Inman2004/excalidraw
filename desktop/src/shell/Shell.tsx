@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { shortcutToCommand } from "../common/protocol";
+import { isBrowserKey, shortcutToCommand } from "../common/protocol";
 
 import {
   flushAll,
@@ -198,6 +198,10 @@ export const Shell = () => {
   // shortcuts while focus is in the shell (tab bar, dialogs)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (isBrowserKey(e)) {
+        e.preventDefault();
+        return;
+      }
       if (document.querySelector(".dsk-backdrop")) {
         return; // a dialog owns the keyboard
       }

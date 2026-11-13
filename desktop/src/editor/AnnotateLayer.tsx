@@ -80,22 +80,10 @@ const remember = {
   },
 };
 
-/** Clipboard API first; falls back to a hidden textarea + execCommand. */
+/** The shell copies with the native clipboard (an iframe may be refused). */
 const copyText = async (text: string) => {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    const area = document.createElement("textarea");
-    area.value = text;
-    area.style.position = "fixed";
-    area.style.opacity = "0";
-    document.body.appendChild(area);
-    area.select();
-    const ok = document.execCommand("copy");
-    area.remove();
-    return ok;
-  }
+  window.parent.postMessage({ type: "copy-text", text, label: "Callout report" }, location.origin);
+  return true;
 };
 
 /** Shift: square / circle for areas, 45° steps for the measure line. */
@@ -148,6 +136,13 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
   const overlay = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const labelPending = useRef(false);
+  labelPending.current = !!labelAt;
+  // latest label text, readable synchronously from key handlers
+  const textRef = useRef("");
+  textRef.current = text;
+  const commitRef = useRef<() => void>(() => {});
+
   // focus the label input once it appears (after the editor settles focus)
   useEffect(() => {
     if (labelAt) {
@@ -163,6 +158,8 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
     setAnchor(null);
     setPointer(null);
     setLabelAt(null);
+    labelPending.current = false;
+    textRef.current = "";
     setText("");
     dragging.current = false;
   };
@@ -178,6 +175,28 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
     const onDown = (e: KeyboardEvent) => {
       shift.current = e.shiftKey;
       if (typing() || e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+      // a label is waiting but its input has no focus yet (the editor grabs
+      // focus after the click): keystrokes go into the label, not to tools
+      if (labelPending.current) {
+        let handled = true;
+        if (e.key.length === 1) {
+          textRef.current += e.key;
+          setText(textRef.current);
+        } else if (e.key === "Backspace") {
+          textRef.current = textRef.current.slice(0, -1);
+          setText(textRef.current);
+        } else if (e.key === "Enter") {
+          commitRef.current();
+        } else {
+          handled = false; // Escape and the rest: handled elsewhere
+        }
+        if (handled) {
+          e.preventDefault();
+          e.stopPropagation();
+          inputRef.current?.focus();
+        }
         return;
       }
       if (e.code === "Space") {
@@ -296,10 +315,11 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
 
   const commitCallout = () => {
     if (anchor && labelAt) {
-      addCallout(api, anchor, labelAt, text, color);
+      addCallout(api, anchor, labelAt, textRef.current, color);
     }
     reset();
   };
+  commitRef.current = commitCallout;
 
   // ------------------------------------------------------------ preview
   const preview = () => {
@@ -376,7 +396,10 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
           style={{ left: labelScreen.x, top: labelScreen.y, borderColor: color.stroke }}
           value={text}
           placeholder={`${next}  Label…`}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            textRef.current = e.target.value;
+            setText(e.target.value);
+          }}
           onPointerDown={(e) => e.stopPropagation()}
           onKeyDown={(e) => {
             e.stopPropagation();
@@ -454,12 +477,8 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
               notify("No callouts yet");
               return;
             }
-            try {
-              await navigator.clipboard.writeText(report);
-              notify(`Copied ${report.split("\n").length} callout labels`);
-            } catch {
-              notify("Could not copy to the clipboard");
-            }
+            await copyText(report);
+            notify(`Copied ${report.split("\n").length} callout labels`);
           }}
         >
           <Icon icon={FilesIcon} size={18} />

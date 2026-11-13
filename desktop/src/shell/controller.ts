@@ -327,6 +327,11 @@ export const activateTab = async (tabId: string) => {
     activeTabId: tabId,
     homeOpen: false,
     tabs: s2.tabs.map((t) => (t.tabId === tabId ? { ...t, lastActive: Date.now() } : t)),
+    // an open drawer follows the active drawing; dialogs belong to their own
+    panel:
+      s2.panel && (s2.panel.kind === "frames" || s2.panel.kind === "annotations")
+        ? { ...s2.panel, docId: doc.docId }
+        : s2.panel,
   }));
   if (!getState().mounted.includes(doc.docId)) {
     setState((s2) => ({ loading: { ...s2.loading, [doc.docId]: true } }));
@@ -496,6 +501,11 @@ const onFrameMessage = (docId: string, msg: FromFrame) => {
       break;
     case "theme-changed":
       setThemePref(msg.theme);
+      break;
+    case "copy-text":
+      native
+        .copyText(msg.text)
+        .catch((e) => toast(`Copy failed: ${e}`, "error"));
       break;
     case "paste-image":
       openImageTab(msg.file);
@@ -1111,7 +1121,7 @@ export const endPresentation = async () => {
 // ------------------------------------------------------------------ home
 
 export const showHome = () => {
-  setState({ homeOpen: true, renamingTabId: null });
+  setState({ homeOpen: true, renamingTabId: null, panel: null });
   updateTitle();
 };
 
@@ -1495,6 +1505,12 @@ export const runCommand = async (
       break;
     case "importLibrary":
       await importLibraryDialog();
+      break;
+    case "annotate":
+      if (activeDocId && !s.homeOpen) {
+        sendToFrame(activeDocId, { type: "annotate-toggle" });
+        sendToFrame(activeDocId, { type: "focus" });
+      }
       break;
     case "presentEnd":
       await endPresentation();

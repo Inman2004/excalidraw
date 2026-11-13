@@ -33,7 +33,8 @@ export type ShellCommand =
   | "templates"
   | "importLibrary"
   | "annotations"
-  | "presentEnd";
+  | "presentEnd"
+  | "annotate";
 
 export type ToFrame =
   | {
@@ -54,6 +55,7 @@ export type ToFrame =
   | { type: "library"; items: LibraryItemsJSON }
   | { type: "snapshot-request"; reqId: number }
   | { type: "focus" }
+  | { type: "annotate-toggle" }
   | { type: "request"; reqId: number; req: FrameRequest }
   /** element skeletons (templates) converted and placed into an empty scene */
   | { type: "skeleton"; elements: unknown[] }
@@ -93,7 +95,9 @@ export type FromFrame =
   | { type: "theme-changed"; theme: Theme }
   | { type: "library-changed"; items: LibraryItemsJSON }
   | { type: "paste-image"; file: { name: string; mime: string; dataURL: string } }
-  | { type: "reply"; reqId: number; ok: boolean; data?: unknown; error?: string };
+  | { type: "reply"; reqId: number; ok: boolean; data?: unknown; error?: string }
+  /** copy text with the native clipboard (iframes may not have access) */
+  | { type: "copy-text"; text: string; label: string };
 
 // ---------------------------------------------------------------------------
 // request / reply: the shell asks a frame for something and awaits the answer
@@ -173,6 +177,13 @@ export const hashText = (text: string, seed = 0) => {
   return (h2 >>> 0).toString(16).padStart(8, "0") + (h1 >>> 0).toString(16).padStart(8, "0");
 };
 
+/** WebView keys that would reload the whole app (or toggle caret browsing): swallowed. */
+export const isBrowserKey = (e: KeyboardEvent) => {
+  const mod = e.ctrlKey || e.metaKey;
+  const key = e.key.toLowerCase();
+  return (mod && key === "r") || e.key === "F7";
+};
+
 /** App shortcuts a frame forwards to the shell (keydown inside the canvas). */
 export const shortcutToCommand = (
   e: KeyboardEvent,
@@ -199,6 +210,7 @@ export const shortcutToCommand = (
     if (key === "e") return { command: "export" };
     if (key === "f") return { command: "search" };
     if (key === "h") return { command: "history" };
+    if (key === "a") return { command: "annotate" };
     return null;
   }
   switch (key) {

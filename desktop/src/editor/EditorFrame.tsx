@@ -48,7 +48,7 @@ import {
   SunIcon,
   SystemIcon,
 } from "../common/Icon";
-import { shortcutToCommand } from "../common/protocol";
+import { isBrowserKey, shortcutToCommand } from "../common/protocol";
 
 import { lockAsBackground } from "./annotate";
 import { AnnotateLayer } from "./AnnotateLayer";
@@ -457,6 +457,9 @@ export const EditorFrame = () => {
             );
           }
           break;
+        case "annotate-toggle":
+          setAnnotating((on) => !on);
+          break;
         case "request":
           if (!api) {
             post({ type: "reply", reqId: msg.reqId, ok: false, error: "The drawing is still loading" });
@@ -507,6 +510,10 @@ export const EditorFrame = () => {
   // app shortcuts pressed inside the canvas go to the shell
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (isBrowserKey(event)) {
+        event.preventDefault();
+        return;
+      }
       if (presentingRef.current) {
         return; // the presenter owns the keyboard
       }
