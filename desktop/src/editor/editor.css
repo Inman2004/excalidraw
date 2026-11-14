@@ -83,7 +83,7 @@ body,
 .ann-step {
   position: fixed;
   z-index: 30;
-  bottom: 70px;
+  bottom: var(--ann-step-bottom, 70px);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -160,4 +160,239 @@ body,
   height: 22px;
   margin: 0 5px;
   background: var(--default-border-color);
+}
+
+/* callout style row, above the palette */
+.ann-options {
+  position: fixed;
+  z-index: 30;
+  left: 50%;
+  bottom: 66px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--island-bg-color);
+  box-shadow: var(--shadow-island);
+}
+
+.ann-btn--sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+}
+
+.ann-btn--text {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ann-step--raised {
+  bottom: 112px;
+}
+
+/* dark mode shows black ink as white on the canvas: the swatch matches */
+.excalidraw.theme--dark .ann-swatch[data-ink="black"],
+.theme--dark .ann-swatch[data-ink="black"] {
+  background: #e9ecef !important;
+}
+
+.ann-group {
+  display: contents;
+}
+
+.ann-options,
+.ann-palette {
+  max-width: calc(100vw - 32px);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+textarea.ann-input {
+  resize: none;
+  min-width: 220px;
+  max-width: 360px;
+  line-height: 1.35;
+  overflow: hidden;
+  field-sizing: content;
+}
+
+/* "delete its arrow too?" offer after a callout label is deleted */
+.ann-ask {
+  position: fixed;
+  z-index: 31;
+  top: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 12px;
+  background: var(--island-bg-color);
+  box-shadow: var(--shadow-island);
+  color: var(--text-primary-color);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ann-ask button {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--default-border-color);
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ann-ask button:hover {
+  background: var(--button-hover-bg);
+}
+
+.ann-ask .ann-ask__primary {
+  border-color: transparent;
+  background: var(--color-primary);
+  color: var(--color-surface-lowest, #fff);
+}
+
+.excalidraw.theme--dark .ann-ask .ann-ask__primary {
+  color: #2b1d00;
+}
+
+/* hint, tool defaults and palette stack at the bottom; a full-width dock
+   lets the bars use the whole window before they wrap */
+.ann-dock {
+  position: fixed;
+  z-index: 30;
+  left: 16px;
+  right: 16px;
+  /* above Excalidraw's zoom / undo / help bar */
+  bottom: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.ann-dock > * {
+  pointer-events: auto;
+}
+
+.ann-dock .ann-step,
+.ann-dock .ann-options,
+.ann-dock .ann-palette {
+  position: static;
+  transform: none;
+  max-width: 100%;
+}
+
+.ann-dock .ann-step {
+  pointer-events: none;
+  white-space: normal;
+  text-align: center;
+}
+
+.ann-btn--auto {
+  width: auto;
+  padding: 0 10px;
+}
+
+/* Auto arrange: split button with a small menu and an undo toast */
+.ann-auto {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ann-auto__main {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 10px 0 0 10px;
+}
+
+.ann-auto__more {
+  width: 20px;
+  border-radius: 0 10px 10px 0;
+}
+
+.ann-menu,
+.ann-toast {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--island-bg-color);
+  box-shadow: var(--shadow-island);
+  color: var(--text-primary-color);
+}
+
+.ann-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 210px;
+}
+
+.ann-menu__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ann-menu__item small {
+  color: var(--color-gray-50, #888);
+  font-size: 11px;
+}
+
+.ann-menu__item:hover {
+  background: var(--button-hover-bg);
+}
+
+.ann-menu__item--on {
+  background: var(--color-primary-light);
+  color: var(--color-primary-darker);
+}
+
+.ann-menu__sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--default-border-color);
+}
+
+.ann-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 14px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ann-toast button {
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-darker);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }

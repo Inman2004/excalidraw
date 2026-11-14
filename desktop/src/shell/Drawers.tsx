@@ -229,6 +229,7 @@ export const FrameNavigator = ({ docId }: { docId: string }) => {
 // ---------------------------------------------------------------- callouts
 
 const SWATCHES = [
+  { id: "black", stroke: "#1e1e1e", fill: "#e9ecef" },
   { id: "red", stroke: "#e03131", fill: "#ffc9c9" },
   { id: "blue", stroke: "#1971c2", fill: "#a5d8ff" },
   { id: "green", stroke: "#2f9e44", fill: "#b2f2bb" },
@@ -355,6 +356,15 @@ export const AnnotationNavigator = ({ docId }: { docId: string }) => {
           <>
             <button className="dsk-btn dsk-btn--primary" onClick={() => void copyReport()}>
               <Icon icon={CopyIconD} /> Copy report
+            </button>
+            <button
+              className="dsk-btn"
+              title="Arrange the callout cards beside the drawing: aligned, evenly spaced, arrows that don't cross (keeps the numbers)"
+              onClick={() =>
+                void requestFrame(docId, { op: "callouts-arrange" }).then(load)
+              }
+            >
+              Auto arrange
             </button>
             {gaps && (
               <button

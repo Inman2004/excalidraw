@@ -52,6 +52,7 @@ import { isBrowserKey, shortcutToCommand } from "../common/protocol";
 
 import { lockAsBackground } from "./annotate";
 import { AnnotateLayer } from "./AnnotateLayer";
+import { CalloutWatch } from "./CalloutWatch";
 import { insertImages } from "./insertImages";
 import { Presenter } from "./Presenter";
 import { handleRequest } from "./requests";
@@ -335,7 +336,7 @@ const PALETTE_ITEMS = [
   paletteItem("Toggle auto-save", "toggleAutosave", AutosaveIcon),
   paletteItem("Toggle always on top", "togglePin", PinIcon, null, ["pin"]),
   paletteItem("Home", "home", HomeIcon, null, ["start"]),
-  paletteItem("About Excalidraw Desktop", "about", InfoIcon),
+  paletteItem("About Paperimo", "about", InfoIcon),
 ];
 
 export const EditorFrame = () => {
@@ -623,6 +624,11 @@ export const EditorFrame = () => {
                   post({ type: "command", command: "presentEnd" });
                 }}
               />,
+              document.querySelector(".excalidraw") ?? document.body,
+            )}
+          {api &&
+            createPortal(
+              <CalloutWatch api={api} />,
               document.querySelector(".excalidraw") ?? document.body,
             )}
           {annotating &&

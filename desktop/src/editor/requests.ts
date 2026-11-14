@@ -16,7 +16,9 @@ import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import { effectiveScale } from "../common/exportLimits";
 import { searchElements } from "../common/search";
 
-import { calloutReportText, formatNumber } from "./annotate";
+import { autoArrange } from "./annotationLayout";
+
+import { calloutReportText, calloutText, formatNumber, labelColors } from "./annotate";
 
 import type {
   CalloutInfo,
@@ -135,7 +137,7 @@ const runExport = async (
 
 // ------------------------------------------------------------------ callouts
 
-type CalloutGroup = {
+export type CalloutGroup = {
   groupId: string;
   n: number;
   rect?: ExcalidrawElement;
@@ -144,27 +146,40 @@ type CalloutGroup = {
   all: ExcalidrawElement[];
 };
 
-const calloutGroups = (api: ExcalidrawImperativeAPI) => {
-  const groups = new Map<string, CalloutGroup>();
-  for (const el of api.getSceneElements()) {
-    const n = (el.customData as any)?.annotation?.callout;
-    const groupId = el.groupIds[el.groupIds.length - 1];
-    if (typeof n !== "number" || !groupId) {
+export const annOf = (el: ExcalidrawElement) => (el.customData as any)?.annotation ?? {};
+
+/**
+ * Callouts are found from their label box. Its text is the bound label, and
+ * its arrow is the tagged arrow bound to it (or, in files made before
+ * callouts were ungrouped, the tagged arrow in the same group).
+ */
+export const calloutGroups = (api: ExcalidrawImperativeAPI) => {
+  const els = api.getSceneElements();
+  const tagged = els.filter((el) => typeof annOf(el).callout === "number");
+  const groups: CalloutGroup[] = [];
+  for (const rect of tagged) {
+    if (rect.type !== "rectangle") {
       continue;
     }
-    const g = groups.get(groupId) ?? { groupId, n, all: [] };
-    g.all.push(el);
-    if (el.type === "rectangle") g.rect = el;
-    if (el.type === "text") g.text = el;
-    if (el.type === "arrow") g.arrow = el;
-    groups.set(groupId, g);
+    const legacyGroup = rect.groupIds[rect.groupIds.length - 1];
+    const text = tagged.find((el) => el.type === "text" && (el as any).containerId === rect.id);
+    const arrow = tagged.find(
+      (el) =>
+        el.type === "arrow" &&
+        ((el as any).startBinding?.elementId === rect.id ||
+          (!!legacyGroup && el.groupIds.includes(legacyGroup))),
+    );
+    const all = [rect, text, arrow].filter(Boolean) as ExcalidrawElement[];
+    groups.push({ groupId: rect.id, n: annOf(rect).callout, rect, text, arrow, all });
   }
-  return [...groups.values()].sort((a, b) => a.n - b.n);
+  return groups.sort((x, y) => x.n - y.n);
 };
 
-const labelOf = (g: CalloutGroup) => {
+export const isNumbered = (g: CalloutGroup) => annOf(g.rect ?? g.all[0]).numbered !== false;
+
+export const labelOf = (g: CalloutGroup) => {
   const raw = ((g.text as any)?.originalText ?? (g.text as any)?.text ?? "") as string;
-  return raw.replace(/^\d+\s*/, "");
+  return isNumbered(g) ? raw.replace(/^\d+\s*/, "") : raw;
 };
 
 /**
@@ -181,7 +196,7 @@ const rebuildLabel = (
   }
   const rect = g.rect as any;
   const oldText = g.text as any;
-  const text = label.trim() ? `${formatNumber(n)}  ${label.trim()}` : formatNumber(n);
+  const text = calloutText(n, label, isNumbered(g));
   const built = convertToExcalidrawElements([
     {
       type: "rectangle",
@@ -228,7 +243,7 @@ const rebuildLabel = (
   return [nextRect, newElementWith(oldText, { isDeleted: true }), nextText];
 };
 
-const applyChanges = (
+export const applyChanges = (
   api: ExcalidrawImperativeAPI,
   changed: ExcalidrawElement[],
 ) => {
@@ -254,13 +269,18 @@ const applyChanges = (
   api.updateScene({ elements: next, captureUpdate: CaptureUpdateAction.IMMEDIATELY });
 };
 
-const recolor = (g: CalloutGroup, stroke: string, fill: string) =>
-  g.all.map((el) => {
+const recolor = (g: CalloutGroup, stroke: string, fill: string) => {
+  const ink = labelColors(annOf(g.rect ?? g.all[0]).style ?? "tinted", { stroke, fill });
+  return g.all.map((el) => {
     if (el.type === "rectangle") {
-      return newElementWith(el, { strokeColor: stroke, backgroundColor: fill });
+      return newElementWith(el, { strokeColor: ink.stroke, backgroundColor: ink.background });
+    }
+    if (el.type === "text") {
+      return newElementWith(el, { strokeColor: ink.text });
     }
     return newElementWith(el, { strokeColor: stroke });
   });
+};
 
 const renumber = (api: ExcalidrawImperativeAPI) => {
   const changed: ExcalidrawElement[] = [];
@@ -382,7 +402,8 @@ export const handleRequest = async (
         groupId: g.groupId,
         number: formatNumber(g.n),
         label: labelOf(g),
-        color: (g.rect ?? g.arrow ?? g.all[0]).strokeColor,
+        // the arrow carries the colour; a text-only label has no border
+        color: (g.arrow ?? g.rect ?? g.all[0]).strokeColor,
       }));
       return list;
     }
@@ -434,6 +455,8 @@ export const handleRequest = async (
     }
     case "callouts-renumber":
       return renumber(api);
+    case "callouts-arrange":
+      return autoArrange(api, { density: req.density ?? "balanced", renumber: !!req.renumber });
     case "report":
       return calloutReportText(api.getSceneElements());
     case "render": {

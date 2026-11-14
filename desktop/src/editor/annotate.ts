@@ -1,6 +1,7 @@
 // Annotation element builders. Everything produced is plain Excalidraw
-// elements (grouped, tagged with `customData.annotation`), so files stay
-// fully compatible with excalidraw.com.
+// elements tagged with `customData.annotation`, so files stay fully
+// compatible with excalidraw.com. Callouts are not grouped: the arrow is
+// bound to its label like any Excalidraw arrow, so both stay editable.
 import {
   CaptureUpdateAction,
   convertToExcalidrawElements,
@@ -9,16 +10,107 @@ import {
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
-export type AnnotateTool = "callout" | "highlight" | "box" | "ellipse" | "measure";
+export type AnnotateTool =
+  | "select"
+  | "callout"
+  | "arrow"
+  | "number"
+  | "highlight"
+  | "box"
+  | "ellipse"
+  | "measure";
 
 export type AnnotateColor = { id: string; stroke: string; fill: string };
 
 export const COLORS: AnnotateColor[] = [
+  { id: "black", stroke: "#1e1e1e", fill: "#e9ecef" },
   { id: "red", stroke: "#e03131", fill: "#ffc9c9" },
   { id: "blue", stroke: "#1971c2", fill: "#a5d8ff" },
   { id: "green", stroke: "#2f9e44", fill: "#b2f2bb" },
   { id: "yellow", stroke: "#f08c00", fill: "#ffec99" },
 ];
+
+/** white: white box, dark text · plain: text only · tinted: colour fill · outline: border only */
+export type LabelStyle = "white" | "plain" | "tinted" | "outline";
+export type ArrowShape = "straight" | "curved" | "elbow";
+export type ArrowHead = "arrow" | "triangle" | "dot" | "bar" | "none";
+export type StrokeStyle = "solid" | "dashed" | "dotted";
+
+/** Defaults for new annotations; once made, they're edited natively. */
+export type CalloutOptions = {
+  style: LabelStyle;
+  shape: ArrowShape;
+  head: ArrowHead;
+  numbered: boolean;
+  /** line width in screen px (arrows, outlines, measure) */
+  width: number;
+  stroke: StrokeStyle;
+};
+
+export const DEFAULT_CALLOUT: CalloutOptions = {
+  style: "white",
+  shape: "straight",
+  head: "triangle",
+  numbered: true,
+  width: 2,
+  stroke: "solid",
+};
+
+const INK = "#111111";
+const LABEL_BORDER = "#333333";
+const HIGHLIGHT_YELLOW = "#ffd43b";
+
+const nativeHead = (head: ArrowHead) =>
+  head === "none" ? null : head === "dot" ? "circle" : head;
+
+/** Label box and text colours for a style. */
+export const labelColors = (style: LabelStyle, color: { stroke: string; fill: string }) => {
+  switch (style) {
+    case "plain":
+      return { stroke: "transparent", background: "transparent", text: color.stroke };
+    case "tinted":
+      return { stroke: color.stroke, background: color.fill, text: INK };
+    case "outline":
+      return { stroke: color.stroke, background: "transparent", text: color.stroke };
+    default:
+      // white label: fixed neutral border; the arrow carries the colour
+      return { stroke: LABEL_BORDER, background: "#ffffff", text: INK };
+  }
+};
+
+export const calloutText = (n: number, label: string, numbered: boolean) => {
+  const t = label.trim();
+  if (!numbered) {
+    return t || formatNumber(n);
+  }
+  return t ? `${formatNumber(n)}  ${t}` : formatNumber(n);
+};
+
+/**
+ * Points of a callout arrow from `start` to `end`, relative to `start`.
+ * Curved arrows get a bend point; elbow arrows go across, then down.
+ */
+export const arrowPoints = (shape: ArrowShape, start: Point, end: Point): [number, number][] => {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  if (shape === "curved") {
+    const bend = 0.2;
+    return [
+      [0, 0],
+      [dx / 2 - dy * bend, dy / 2 + dx * bend],
+      [dx, dy],
+    ];
+  }
+  if (shape === "elbow") {
+    return Math.abs(dx) >= Math.abs(dy)
+      ? [[0, 0], [dx / 2, 0], [dx / 2, dy], [dx, dy]]
+      : [[0, 0], [0, dy / 2], [dx, dy / 2], [dx, dy]];
+  }
+  return [
+    [0, 0],
+    [dx, dy],
+  ];
+};
 
 export type Point = { x: number; y: number };
 
@@ -28,7 +120,7 @@ type Skeleton = Parameters<typeof convertToExcalidrawElements>[0] extends
   ? T
   : never;
 
-const randomId = () => Math.random().toString(36).slice(2, 12);
+export const randomId = () => Math.random().toString(36).slice(2, 12);
 
 const CLEAN = { roughness: 0, strokeWidth: 2 } as const;
 
@@ -39,11 +131,14 @@ const CLEAN = { roughness: 0, strokeWidth: 2 } as const;
 const screenScale = (api: ExcalidrawImperativeAPI) =>
   Math.min(8, Math.max(0.25, 1 / api.getAppState().zoom.value));
 
-/** Next callout number: one more than the highest recognised callout. */
-export const nextCalloutNumber = (elements: readonly ExcalidrawElement[]) => {
+/** Next callout (or number marker) number: one more than the highest. */
+export const nextCalloutNumber = (
+  elements: readonly ExcalidrawElement[],
+  key: "callout" | "number" = "callout",
+) => {
   let max = 0;
   for (const el of elements) {
-    const n = (el.customData as any)?.annotation?.callout;
+    const n = (el.customData as any)?.annotation?.[key];
     if (!el.isDeleted && typeof n === "number" && n > max) {
       max = n;
     }
@@ -51,18 +146,22 @@ export const nextCalloutNumber = (elements: readonly ExcalidrawElement[]) => {
   return max + 1;
 };
 
-export const formatNumber = (n: number) => String(n).padStart(2, "0");
+export function formatNumber(n: number) {
+  return String(n).padStart(2, "0");
+}
 
-/** Tag all new elements as one annotation group and insert as one undo step. */
+/**
+ * Tag new elements and insert them as one undo step. Nothing is grouped:
+ * related parts are bound (arrow to label, text to its container), so each
+ * stays editable with Excalidraw's own tools.
+ */
 const commit = (
   api: ExcalidrawImperativeAPI,
   created: readonly ExcalidrawElement[],
   annotation: Record<string, unknown>,
 ) => {
-  const groupId = randomId();
   const tagged = created.map((el) => ({
     ...el,
-    groupIds: [groupId],
     customData: { ...(el.customData ?? {}), annotation },
   })) as ExcalidrawElement[];
   api.updateScene({
@@ -73,8 +172,8 @@ const commit = (
 };
 
 /**
- * Numbered callout: a rounded label at `labelAt`, with an arrow bound to it
- * pointing at `target`. Returns the inserted elements.
+ * Callout: a label at `labelAt` with an arrow pointing at `target`. The arrow
+ * is bound to the label, so it follows it and keeps its own handles.
  */
 export const addCallout = (
   api: ExcalidrawImperativeAPI,
@@ -82,24 +181,27 @@ export const addCallout = (
   labelAt: Point,
   text: string,
   color: AnnotateColor,
+  opts: CalloutOptions = DEFAULT_CALLOUT,
 ) => {
   const n = nextCalloutNumber(api.getSceneElements());
-  const labelText = text.trim() ? `${formatNumber(n)}  ${text.trim()}` : formatNumber(n);
+  const labelText = calloutText(n, text, opts.numbered);
   const rectId = randomId();
   const sc = screenScale(api);
   const fontSize = Math.round(16 * sc);
+  const ink = labelColors(opts.style, color);
   const labelStyle = {
-    strokeColor: color.stroke,
-    backgroundColor: color.fill,
+    strokeColor: ink.stroke,
+    backgroundColor: ink.background,
     fillStyle: "solid" as const,
     roundness: { type: 3 as const },
     ...CLEAN,
-    strokeWidth: 2 * sc,
+    strokeWidth: (opts.style === "white" ? 1 : 2) * sc,
   };
+  const label = { text: labelText, fontSize, strokeColor: ink.text };
 
   // measure the label first so it can be centred on the second click
   const probe = convertToExcalidrawElements([
-    { type: "rectangle", x: 0, y: 0, label: { text: labelText, fontSize }, ...labelStyle },
+    { type: "rectangle", x: 0, y: 0, label, ...labelStyle },
   ]);
   const box = probe.find((el) => el.type === "rectangle")!;
   const width = Math.max(box.width, 44 * sc);
@@ -110,41 +212,116 @@ export const addCallout = (
   // start the arrow where the line to the target leaves the label box
   const dx = target.x - labelAt.x;
   const dy = target.y - labelAt.y;
-  const t = Math.min(
-    dx ? width / 2 / Math.abs(dx) : Infinity,
-    dy ? height / 2 / Math.abs(dy) : Infinity,
-  );
-  const gap = 4 * sc;
-  const len = Math.hypot(dx, dy) || 1;
-  const start = Number.isFinite(t) && t < 1
-    ? { x: labelAt.x + dx * t + (dx / len) * gap, y: labelAt.y + dy * t + (dy / len) * gap }
-    : labelAt;
+  let start = labelAt;
+  if (opts.shape === "elbow") {
+    // leave from the side facing the target
+    start = Math.abs(dx) >= Math.abs(dy)
+      ? { x: labelAt.x + Math.sign(dx) * (width / 2 + 4 * sc), y: labelAt.y }
+      : { x: labelAt.x, y: labelAt.y + Math.sign(dy) * (height / 2 + 4 * sc) };
+  } else {
+    const t = Math.min(
+      dx ? width / 2 / Math.abs(dx) : Infinity,
+      dy ? height / 2 / Math.abs(dy) : Infinity,
+    );
+    const gap = 4 * sc;
+    const len = Math.hypot(dx, dy) || 1;
+    if (Number.isFinite(t) && t < 1) {
+      start = { x: labelAt.x + dx * t + (dx / len) * gap, y: labelAt.y + dy * t + (dy / len) * gap };
+    }
+  }
+  const points = arrowPoints(opts.shape, start, target);
 
   const skeletons: Skeleton[] = [
-    {
-      type: "rectangle",
-      id: rectId,
-      x,
-      y,
-      width,
-      height,
-      label: { text: labelText, fontSize },
-      ...labelStyle,
-    },
+    { type: "rectangle", id: rectId, x, y, width, height, label, ...labelStyle },
     {
       type: "arrow",
       x: start.x,
       y: start.y,
       width: target.x - start.x,
       height: target.y - start.y,
-      strokeColor: color.stroke,
-      endArrowhead: "triangle",
+      points: points as any,
       start: { id: rectId },
-      ...CLEAN,
-      strokeWidth: 2 * sc,
-    },
+      ...arrowLook(api, color, opts),
+    } as Skeleton,
   ];
-  return commit(api, convertToExcalidrawElements(skeletons), { callout: n });
+  // `id` links the parts (label, its text, arrow) even after editing
+  const annotation = {
+    callout: n,
+    id: randomId(),
+    numbered: opts.numbered,
+    style: opts.style,
+  };
+  return commit(api, convertToExcalidrawElements(skeletons), annotation);
+};
+
+/** Native arrow properties for the chosen defaults. */
+const arrowLook = (
+  api: ExcalidrawImperativeAPI,
+  color: AnnotateColor,
+  opts: CalloutOptions,
+) => ({
+  strokeColor: color.stroke,
+  startArrowhead: null,
+  endArrowhead: nativeHead(opts.head) as any,
+  roundness: opts.shape === "curved" ? { type: 2 as const } : null,
+  ...(opts.shape === "elbow" ? { elbowed: true } : null),
+  strokeStyle: opts.stroke,
+  ...CLEAN,
+  strokeWidth: opts.width * screenScale(api),
+});
+
+/** A plain arrow from `a` to `b`, exactly like one drawn with the arrow tool. */
+export const addArrow = (
+  api: ExcalidrawImperativeAPI,
+  a: Point,
+  b: Point,
+  color: AnnotateColor,
+  opts: CalloutOptions,
+) =>
+  commit(
+    api,
+    convertToExcalidrawElements([
+      {
+        type: "arrow",
+        x: a.x,
+        y: a.y,
+        width: b.x - a.x,
+        height: b.y - a.y,
+        points: arrowPoints(opts.shape, a, b) as any,
+        ...arrowLook(api, color, opts),
+      } as Skeleton,
+    ]),
+    { arrow: true },
+  );
+
+/** Numbered marker: a filled circle with the next number, centred on `p`. */
+export const addNumber = (
+  api: ExcalidrawImperativeAPI,
+  p: Point,
+  color: AnnotateColor,
+) => {
+  const n = nextCalloutNumber(api.getSceneElements(), "number");
+  const sc = screenScale(api);
+  const size = 32 * sc;
+  return commit(
+    api,
+    convertToExcalidrawElements([
+      {
+        type: "ellipse",
+        x: p.x - size / 2,
+        y: p.y - size / 2,
+        width: size,
+        height: size,
+        strokeColor: color.stroke,
+        backgroundColor: color.stroke,
+        fillStyle: "solid",
+        ...CLEAN,
+        strokeWidth: 1 * sc,
+        label: { text: String(n), fontSize: Math.round(16 * sc), strokeColor: "#ffffff" },
+      },
+    ]),
+    { number: n },
+  );
 };
 
 const rectFrom = (a: Point, b: Point) => ({
@@ -168,9 +345,10 @@ export const addHighlight = (
         type: "rectangle",
         ...rectFrom(a, b),
         strokeColor: "transparent",
-        backgroundColor: color.fill,
+        // black ink would make a grey smear: highlight in yellow instead
+        backgroundColor: color.id === "black" ? HIGHLIGHT_YELLOW : color.fill,
         fillStyle: "solid",
-        opacity: 45,
+        opacity: 40,
         roundness: { type: 3 },
         ...CLEAN,
       },
@@ -185,6 +363,7 @@ export const addMarker = (
   b: Point,
   shape: "box" | "ellipse",
   color: AnnotateColor,
+  opts: CalloutOptions = DEFAULT_CALLOUT,
 ) =>
   commit(
     api,
@@ -195,8 +374,9 @@ export const addMarker = (
         strokeColor: color.stroke,
         backgroundColor: "transparent",
         roundness: shape === "box" ? { type: 3 } : null,
+        strokeStyle: opts.stroke,
         ...CLEAN,
-        strokeWidth: 3 * screenScale(api),
+        strokeWidth: Math.max(opts.width, 2) * screenScale(api),
       },
     ]),
     { marker: shape },
@@ -257,34 +437,19 @@ export const measureLabel = (api: ExcalidrawImperativeAPI, a: Point, b: Point) =
     : `${Math.round(Math.hypot(b.x - a.x, b.y - a.y))} px`;
 };
 
-/** Dimension line with its length: image pixels when on an image, else canvas px. */
+/**
+ * Dimension line: a native arrow with bar ends and its length as the arrow's
+ * own label, so both endpoints stay draggable and the label rides along.
+ */
 export const addMeasure = (
   api: ExcalidrawImperativeAPI,
   a: Point,
   b: Point,
   color: AnnotateColor,
+  opts: CalloutOptions = DEFAULT_CALLOUT,
 ) => {
   const sc = screenScale(api);
-  const dist = Math.hypot(b.x - a.x, b.y - a.y);
   const label = measureLabel(api, a, b);
-  const fontSize = Math.round(16 * sc);
-  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-  // offset the label perpendicular to the line so it never covers it
-  const len = dist || 1;
-  const nx = -(b.y - a.y) / len;
-  const ny = (b.x - a.x) / len;
-  const off = 20 * sc;
-  const probe = convertToExcalidrawElements([
-    { type: "rectangle", x: 0, y: 0, label: { text: label, fontSize } },
-  ]).find((el) => el.type === "rectangle")!;
-  // clear the line: half the pill's height plus a small gap
-  const offset = Math.max(off, probe.height / 2 + 10 * sc);
-  const pill = {
-    width: probe.width,
-    height: probe.height,
-    x: mid.x + nx * offset - probe.width / 2,
-    y: mid.y + ny * offset - probe.height / 2,
-  };
   return commit(
     api,
     convertToExcalidrawElements([
@@ -294,30 +459,60 @@ export const addMeasure = (
         y: a.y,
         width: b.x - a.x,
         height: b.y - a.y,
+        points: [
+          [0, 0],
+          [b.x - a.x, b.y - a.y],
+        ] as any,
         strokeColor: color.stroke,
         startArrowhead: "bar",
         endArrowhead: "bar",
+        roundness: null,
+        strokeStyle: opts.stroke,
         ...CLEAN,
-        strokeWidth: 2 * sc,
-      },
-      {
-        // a small filled pill keeps the length readable on busy images
-        type: "rectangle",
-        x: pill.x,
-        y: pill.y,
-        width: pill.width,
-        height: pill.height,
-        label: { text: label, fontSize },
-        strokeColor: color.stroke,
-        backgroundColor: color.fill,
-        fillStyle: "solid",
-        roundness: { type: 3 },
-        ...CLEAN,
-        strokeWidth: 1 * sc,
-      },
+        strokeWidth: opts.width * sc,
+        label: { text: label, fontSize: Math.round(16 * sc), strokeColor: color.stroke },
+      } as Skeleton,
     ]),
     { measure: label },
   );
+};
+
+/**
+ * All parts of the callouts touching `ids`: label box, its text and arrow.
+ * Parts are linked by binding, or by the shared annotation id.
+ */
+export const calloutParts = (api: ExcalidrawImperativeAPI, ids: Iterable<string>) => {
+  const els = api.getSceneElements();
+  const byId = new Map(els.map((el) => [el.id, el]));
+  const tagged = els.filter((el) => typeof (el.customData as any)?.annotation?.callout === "number");
+  const rects = new Set<string>();
+  for (const id of ids) {
+    const el = byId.get(id);
+    if (!el || typeof (el.customData as any)?.annotation?.callout !== "number") {
+      continue;
+    }
+    if (el.type === "rectangle") rects.add(el.id);
+    else if (el.type === "text" && (el as any).containerId) rects.add((el as any).containerId);
+    else if (el.type === "arrow") {
+      const bound = (el as any).startBinding?.elementId;
+      const cid = (el.customData as any).annotation.id;
+      const rect =
+        (bound && byId.get(bound)) ||
+        tagged.find((r) => r.type === "rectangle" && cid && (r.customData as any).annotation.id === cid);
+      if (rect) rects.add(rect.id);
+    }
+  }
+  const out: string[] = [];
+  for (const rid of rects) {
+    out.push(rid);
+    for (const el of tagged) {
+      if ((el.type === "text" && (el as any).containerId === rid) ||
+          (el.type === "arrow" && (el as any).startBinding?.elementId === rid)) {
+        out.push(el.id);
+      }
+    }
+  }
+  return out;
 };
 
 // ------------------------------------------------------------- layering

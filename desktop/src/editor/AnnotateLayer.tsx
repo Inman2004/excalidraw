@@ -7,6 +7,8 @@ import {
 
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
+import { AutoArrange } from "./AutoArrange";
+
 import {
   AnnotateIcon,
   CloseIcon,
@@ -17,13 +19,19 @@ import {
 
 import {
   COLORS,
+  DEFAULT_CALLOUT,
+  addArrow,
   addCallout,
+  addNumber,
+  arrowPoints,
+  calloutParts,
   addHighlight,
   addMarker,
   addMeasure,
   bringForward,
   calloutReportText,
   formatNumber,
+  labelColors,
   lockAsBackground,
   measureLabel,
   nextCalloutNumber,
@@ -38,10 +46,23 @@ import {
   HighlightIcon,
   LockIcon,
   MeasureIcon,
+  NumberIcon,
+  PairIcon,
+  PlainArrowIcon,
+  SelectIcon,
   UnlockIcon,
 } from "./annotateIcons";
 
-import type { AnnotateColor, AnnotateTool, Point } from "./annotate";
+import type {
+  AnnotateColor,
+  AnnotateTool,
+  ArrowHead,
+  ArrowShape,
+  CalloutOptions,
+  LabelStyle,
+  Point,
+  StrokeStyle,
+} from "./annotate";
 
 type Props = {
   api: ExcalidrawImperativeAPI;
@@ -49,12 +70,73 @@ type Props = {
 };
 
 const TOOLS: { id: AnnotateTool; label: string; hint: string; icon: typeof CalloutIcon }[] = [
+  { id: "select", label: "Select", hint: "Click to select, drag handles to bend or move, double-click to edit text", icon: SelectIcon },
   { id: "callout", label: "Callout", hint: "Click the spot, click where the label goes, type", icon: CalloutIcon },
+  { id: "arrow", label: "Arrow", hint: "Drag from the start to the tip", icon: PlainArrowIcon },
+  { id: "number", label: "Number marker", hint: "Click to drop the next number", icon: NumberIcon },
   { id: "highlight", label: "Highlight", hint: "Drag over an area", icon: HighlightIcon },
   { id: "box", label: "Box", hint: "Drag to frame an area", icon: BoxIcon },
   { id: "ellipse", label: "Circle", hint: "Drag to circle an area", icon: EllipseIcon },
   { id: "measure", label: "Measure", hint: "Drag from one point to another", icon: MeasureIcon },
 ];
+
+// small previews for the callout options (drawn, so they show the result)
+const G = (children: React.ReactNode) => (
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    {children}
+  </svg>
+);
+const TEXT_LINES = <path d="M8 11h8M8 14h5" />;
+
+const STYLES: { id: LabelStyle; label: string; glyph: React.ReactNode }[] = [
+  { id: "white", label: "White label, dark text", glyph: G(<><rect x="3.5" y="6" width="17" height="12" rx="3" fill="#fff" /><path d="M8 11h8M8 14h5" stroke="#1e1e1e" /></>) },
+  { id: "plain", label: "No background (text only)", glyph: G(<path d="M7 8h10M12 8v9" strokeWidth="2" />) },
+  { id: "tinted", label: "Tinted background", glyph: G(<><rect x="3.5" y="6" width="17" height="12" rx="3" fill="currentColor" fillOpacity="0.3" />{TEXT_LINES}</>) },
+  { id: "outline", label: "Outline only", glyph: G(<><rect x="3.5" y="6" width="17" height="12" rx="3" />{TEXT_LINES}</>) },
+];
+
+const SHAPES: { id: ArrowShape; label: string; glyph: React.ReactNode }[] = [
+  { id: "straight", label: "Straight arrow", glyph: G(<path d="M4 19 19 5" />) },
+  { id: "curved", label: "Curved arrow", glyph: G(<path d="M4 19C6 9 12 5 19 5" />) },
+  { id: "elbow", label: "Elbow arrow", glyph: G(<path d="M4 19h8V5h7" />) },
+];
+
+const HEADS: { id: ArrowHead; label: string; glyph: React.ReactNode }[] = [
+  { id: "triangle", label: "Triangle head", glyph: G(<><path d="M3 12h11" /><path d="M13 7l7 5-7 5z" fill="currentColor" /></>) },
+  { id: "arrow", label: "Arrow head", glyph: G(<path d="M3 12h16M14 7l5 5-5 5" />) },
+  { id: "dot", label: "Dot", glyph: G(<><path d="M3 12h12" /><circle cx="17.5" cy="12" r="3" fill="currentColor" /></>) },
+  { id: "bar", label: "Bar", glyph: G(<path d="M3 12h16M19 7v10" />) },
+  { id: "none", label: "No head", glyph: G(<path d="M3 12h18" />) },
+];
+
+const WIDTHS: { id: number; label: string; glyph: React.ReactNode }[] = [1, 2, 4, 6].map((w) => ({
+  id: w,
+  label: `Line width ${w} px`,
+  glyph: G(<path d="M4 12h16" strokeWidth={Math.min(w, 5) + 0.4} strokeLinecap="butt" />),
+}));
+
+const STROKES: { id: StrokeStyle; label: string; glyph: React.ReactNode }[] = [
+  { id: "solid", label: "Solid line", glyph: G(<path d="M4 12h16" strokeWidth="2" />) },
+  { id: "dashed", label: "Dashed line", glyph: G(<path d="M4 12h16" strokeWidth="2" strokeDasharray="4 3" strokeLinecap="butt" />) },
+  { id: "dotted", label: "Dotted line", glyph: G(<path d="M4 12h16" strokeWidth="2" strokeDasharray="0.1 4" />) },
+];
+
+/** Which defaults each tool uses. */
+const TOOL_OPTIONS: Partial<Record<AnnotateTool, (keyof CalloutOptions)[]>> = {
+  callout: ["style", "shape", "head", "width", "stroke", "numbered"],
+  arrow: ["shape", "head", "width", "stroke"],
+  box: ["width", "stroke"],
+  ellipse: ["width", "stroke"],
+  measure: ["width", "stroke"],
+};
+
+const loadOptions = (): CalloutOptions => {
+  try {
+    return { ...DEFAULT_CALLOUT, ...JSON.parse(localStorage.getItem("ann:callout") ?? "{}") };
+  } catch {
+    return DEFAULT_CALLOUT;
+  }
+};
 
 /** Scene point → frame-relative CSS px for the overlay preview. */
 const toScreen = (api: ExcalidrawImperativeAPI, p: Point) => {
@@ -93,7 +175,7 @@ const constrain = (tool: AnnotateTool, a: Point, b: Point, shift: boolean): Poin
   }
   const dx = b.x - a.x;
   const dy = b.y - a.y;
-  if (tool === "measure") {
+  if (tool === "measure" || tool === "arrow") {
     const step = Math.PI / 4;
     const angle = Math.round(Math.atan2(dy, dx) / step) * step;
     const len = Math.hypot(dx, dy);
@@ -102,6 +184,18 @@ const constrain = (tool: AnnotateTool, a: Point, b: Point, shift: boolean): Poin
   const side = Math.max(Math.abs(dx), Math.abs(dy));
   return { x: a.x + Math.sign(dx || 1) * side, y: a.y + Math.sign(dy || 1) * side };
 };
+
+/**
+ * Excalidraw handles its shortcuts (undo, delete, …) only while focus is
+ * inside the editor; the overlay would otherwise leave focus on the page.
+ */
+const focusEditor = () =>
+  window.setTimeout(() => {
+    const el = document.querySelector<HTMLElement>(".excalidraw-container, .excalidraw");
+    if (el && !el.contains(document.activeElement)) {
+      el.focus({ preventScroll: true });
+    }
+  }, 0);
 
 const toScene = (api: ExcalidrawImperativeAPI, clientX: number, clientY: number): Point =>
   viewportCoordsToSceneCoords({ clientX, clientY }, api.getAppState());
@@ -118,8 +212,15 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
   const [tool, setTool] = useState<AnnotateTool>(
     () => (TOOLS.find((t) => t.id === remember.get("tool"))?.id ?? "callout"),
   );
+  const [opts, setOpts] = useState<CalloutOptions>(loadOptions);
+  const setOpt = (patch: Partial<CalloutOptions>) =>
+    setOpts((o) => {
+      const next = { ...o, ...patch };
+      remember.set("callout", JSON.stringify(next));
+      return next;
+    });
   const [color, setColor] = useState<AnnotateColor>(
-    () => COLORS.find((c) => c.id === remember.get("color")) ?? COLORS[0],
+    () => COLORS.find((c) => c.id === remember.get("colour")) ?? COLORS[0],
   );
   /** Space held: clicks pass through to the canvas (pan, select, move) */
   const [passThrough, setPassThrough] = useState(false);
@@ -134,7 +235,7 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
   const [, setTick] = useState(0);
   const dragging = useRef(false);
   const overlay = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const labelPending = useRef(false);
   labelPending.current = !!labelAt;
@@ -166,12 +267,15 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
 
   useEffect(reset, [tool]);
   useEffect(() => remember.set("tool", tool), [tool]);
-  useEffect(() => remember.set("color", color.id), [color]);
+  useEffect(() => remember.set("colour", color.id), [color]);
   useEffect(() => preloadImageSizes(api), [api]);
 
   // keys while annotating (not while typing a label)
   useEffect(() => {
-    const typing = () => document.activeElement?.tagName === "INPUT";
+    const typing = () => {
+      const tag = document.activeElement?.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA";
+    };
     const onDown = (e: KeyboardEvent) => {
       shift.current = e.shiftKey;
       if (typing() || e.ctrlKey || e.metaKey || e.altKey) {
@@ -187,6 +291,9 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
         } else if (e.key === "Backspace") {
           textRef.current = textRef.current.slice(0, -1);
           setText(textRef.current);
+        } else if (e.key === "Enter" && e.shiftKey) {
+          textRef.current += "\n";
+          setText(textRef.current);
         } else if (e.key === "Enter") {
           commitRef.current();
         } else {
@@ -199,16 +306,30 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
         }
         return;
       }
+      const n = Number(e.key);
+      if (tool === "select") {
+        // digits pick an annotate tool; every other key is Excalidraw's
+        // (delete, arrow keys, shortcuts) while editing the selection
+        if (n >= 1 && n < TOOLS.length) {
+          e.preventDefault();
+          e.stopPropagation();
+          setTool(TOOLS[n].id);
+        }
+        return;
+      }
       if (e.code === "Space") {
         e.preventDefault();
         setPassThrough(true);
         return;
       }
-      const n = Number(e.key);
-      if (n >= 1 && n <= TOOLS.length) {
+      if (n >= 1 && n < TOOLS.length) {
         e.preventDefault();
         e.stopPropagation();
-        setTool(TOOLS[n - 1].id);
+        setTool(TOOLS[n].id);
+      } else if (e.key.toLowerCase() === "v") {
+        e.preventDefault();
+        e.stopPropagation();
+        setTool("select");
       } else if (e.key.toLowerCase() === "c") {
         e.preventDefault();
         e.stopPropagation();
@@ -227,15 +348,18 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
       window.removeEventListener("keydown", onDown, { capture: true });
       window.removeEventListener("keyup", onUp, { capture: true });
     };
-  }, []);
+  }, [tool]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      // Escape while editing a label's text belongs to Excalidraw
+      if (e.key === "Escape" && document.activeElement?.tagName !== "TEXTAREA") {
         e.preventDefault();
         e.stopPropagation();
         if (anchor || labelAt) {
           reset();
+        } else if (tool === "select" && Object.keys(api.getAppState().selectedElementIds).length) {
+          api.selection.clear();
         } else {
           onExit();
         }
@@ -243,17 +367,18 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
     };
     window.addEventListener("keydown", onKey, { capture: true });
     return () => window.removeEventListener("keydown", onKey, { capture: true });
-  }, [anchor, labelAt, onExit]);
+  }, [anchor, labelAt, onExit, tool, api]);
 
-  const isDrag = tool !== "callout";
+  const isDrag = tool !== "callout" && tool !== "number" && tool !== "select";
 
   const finishDrag = (a: Point, b: Point) => {
     if (Math.hypot(b.x - a.x, b.y - a.y) < 4 / api.getAppState().zoom.value) {
       return; // a click, not a drag
     }
     if (tool === "highlight") addHighlight(api, a, b, color);
-    else if (tool === "box" || tool === "ellipse") addMarker(api, a, b, tool, color);
-    else if (tool === "measure") addMeasure(api, a, b, color);
+    else if (tool === "arrow") addArrow(api, a, b, color, opts);
+    else if (tool === "box" || tool === "ellipse") addMarker(api, a, b, tool, color, opts);
+    else if (tool === "measure") addMeasure(api, a, b, color, opts);
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -261,7 +386,13 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
       return;
     }
     const p = toScene(api, e.clientX, e.clientY);
+    if (tool === "number") {
+      addNumber(api, p, color);
+      focusEditor();
+      return;
+    }
     if (isDrag) {
+      focusEditor();
       dragging.current = true;
       overlay.current?.setPointerCapture(e.pointerId);
       setAnchor(p);
@@ -269,6 +400,7 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
       return;
     }
     if (!anchor) {
+      focusEditor();
       setAnchor(p); // click 1: what the arrow points at
       setPointer(p);
     } else {
@@ -315,11 +447,14 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
 
   const commitCallout = () => {
     if (anchor && labelAt) {
-      addCallout(api, anchor, labelAt, textRef.current, color);
+      addCallout(api, anchor, labelAt, textRef.current, color, opts);
     }
     reset();
+    focusEditor();
   };
   commitRef.current = commitCallout;
+
+  const next = formatNumber(nextCalloutNumber(api.getSceneElements()));
 
   // ------------------------------------------------------------ preview
   const preview = () => {
@@ -330,12 +465,47 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
     const b = toScreen(api, labelAt ?? pointer);
     const stroke = color.stroke;
     if (tool === "callout") {
+      const pts = arrowPoints(opts.shape, b, a).map(([x, y]) => [b.x + x, b.y + y]);
+      // the curve passes through its middle point, like Excalidraw's
+      const d =
+        opts.shape === "curved"
+          ? `M${pts[0][0]} ${pts[0][1]} Q${2 * pts[1][0] - (pts[0][0] + pts[2][0]) / 2} ${2 * pts[1][1] - (pts[0][1] + pts[2][1]) / 2} ${pts[2][0]} ${pts[2][1]}`
+          : `M${pts.map((p) => p.join(" ")).join(" L")}`;
+      const ink = labelColors(opts.style, color);
+      const ghost = !labelAt && (
+        <g opacity={0.85}>
+          <rect
+            x={b.x - 28}
+            y={b.y - 17}
+            width={56}
+            height={34}
+            rx={8}
+            fill={ink.background === "transparent" ? "none" : ink.background}
+            stroke={ink.stroke === "transparent" ? stroke : ink.stroke}
+            strokeDasharray={ink.stroke === "transparent" ? "4 4" : undefined}
+          />
+          <text x={b.x} y={b.y + 5} textAnchor="middle" fontSize={14} fontWeight={600} fill={ink.text}>
+            {opts.numbered ? next : "Aa"}
+          </text>
+        </g>
+      );
       return (
         <>
-          <line x1={b.x} y1={b.y} x2={a.x} y2={a.y} stroke={stroke} strokeWidth={2} strokeDasharray={labelAt ? undefined : "6 5"} />
+          <path d={d} fill="none" stroke={stroke} strokeWidth={opts.width} strokeDasharray={labelAt ? undefined : "6 5"} />
+          {ghost}
           <circle cx={a.x} cy={a.y} r={5} fill={stroke} />
           <circle cx={a.x} cy={a.y} r={11} fill="none" stroke={stroke} strokeOpacity={0.35} strokeWidth={2} />
         </>
+      );
+    }
+    if (tool === "arrow") {
+      const pts = arrowPoints(opts.shape, a, b).map(([x, y]) => [a.x + x, a.y + y]);
+      const d =
+        opts.shape === "curved"
+          ? `M${pts[0][0]} ${pts[0][1]} Q${2 * pts[1][0] - (pts[0][0] + pts[2][0]) / 2} ${2 * pts[1][1] - (pts[0][1] + pts[2][1]) / 2} ${pts[2][0]} ${pts[2][1]}`
+          : `M${pts.map((p) => p.join(" ")).join(" L")}`;
+      return (
+        <path d={d} fill="none" stroke={stroke} strokeWidth={opts.width} strokeDasharray={opts.stroke === "dashed" ? "8 6" : opts.stroke === "dotted" ? "1 5" : undefined} strokeLinecap="round" />
       );
     }
     const x = Math.min(a.x, b.x);
@@ -363,10 +533,11 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
   };
 
   const labelScreen = labelAt ? toScreen(api, labelAt) : null;
-  const next = formatNumber(nextCalloutNumber(api.getSceneElements()));
   const activeTool = TOOLS.find((t) => t.id === tool)!;
   const step =
-    tool === "callout"
+    tool === "select"
+      ? activeTool.hint
+      : tool === "callout"
       ? labelAt
         ? "Type the label, Enter to place it"
         : anchor
@@ -379,7 +550,7 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
     <>
       <div
         ref={overlay}
-        className={`ann-overlay${passThrough ? " ann-overlay--through" : ""}`}
+        className={`ann-overlay${passThrough || tool === "select" ? " ann-overlay--through" : ""}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -390,12 +561,25 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
       </div>
 
       {labelScreen && (
-        <input
+        <textarea
           ref={inputRef}
           className="ann-input"
-          style={{ left: labelScreen.x, top: labelScreen.y, borderColor: color.stroke }}
+          rows={Math.min(8, text.split("\n").length)}
+          wrap="soft"
+          style={(() => {
+            const ink = labelColors(opts.style, color);
+            const bare = ink.stroke === "transparent";
+            return {
+              left: labelScreen.x,
+              top: labelScreen.y,
+              borderColor: bare ? color.stroke : ink.stroke,
+              borderStyle: bare ? "dashed" : "solid",
+              background: ink.background === "transparent" ? undefined : ink.background,
+              color: ink.background === "transparent" ? ink.text : "#1e1e1e",
+            };
+          })()}
           value={text}
-          placeholder={`${next}  Label…`}
+          placeholder={opts.numbered ? `${next}  Label… (Shift+Enter: new line)` : "Label… (Shift+Enter: new line)"}
           onChange={(e) => {
             textRef.current = e.target.value;
             setText(e.target.value);
@@ -403,7 +587,8 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
           onPointerDown={(e) => e.stopPropagation()}
           onKeyDown={(e) => {
             e.stopPropagation();
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault(); // Shift+Enter adds a line
               commitCallout();
             } else if (e.key === "Escape") {
               reset();
@@ -414,9 +599,110 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
         />
       )}
 
+      <div className="ann-dock">
       <div className="ann-step" aria-live="polite">
         <Icon icon={AnnotateIcon} size={15} /> {stepText}
       </div>
+
+      {TOOL_OPTIONS[tool] && (
+        <div className="ann-options" role="toolbar" aria-label="Defaults for new annotations">
+          {TOOL_OPTIONS[tool]!.map((key, i) => (
+            <span key={key} className="ann-group">
+              {i > 0 && <span className="ann-sep" />}
+              {key === "style" && (
+                <>
+              {STYLES.map((o) => (
+                <button
+                  key={o.id}
+                  className={`ann-btn ann-btn--sm${opts.style === o.id ? " ann-btn--on" : ""}`}
+                  title={o.label}
+                  aria-label={o.label}
+                  aria-pressed={opts.style === o.id}
+                  onClick={() => setOpt({ style: o.id })}
+                >
+                  {o.glyph}
+                </button>
+              ))}
+                </>
+              )}
+              {key === "shape" && (
+                <>
+              {SHAPES.map((o) => (
+                <button
+                  key={o.id}
+                  className={`ann-btn ann-btn--sm${opts.shape === o.id ? " ann-btn--on" : ""}`}
+                  title={o.label}
+                  aria-label={o.label}
+                  aria-pressed={opts.shape === o.id}
+                  onClick={() => setOpt({ shape: o.id })}
+                >
+                  {o.glyph}
+                </button>
+              ))}
+                </>
+              )}
+              {key === "head" && (
+                <>
+              {HEADS.map((o) => (
+                <button
+                  key={o.id}
+                  className={`ann-btn ann-btn--sm${opts.head === o.id ? " ann-btn--on" : ""}`}
+                  title={o.label}
+                  aria-label={o.label}
+                  aria-pressed={opts.head === o.id}
+                  onClick={() => setOpt({ head: o.id })}
+                >
+                  {o.glyph}
+                </button>
+              ))}
+                </>
+              )}
+              {key === "width" && (
+                <>
+              {WIDTHS.map((o) => (
+                <button
+                  key={o.id}
+                  className={`ann-btn ann-btn--sm${opts.width === o.id ? " ann-btn--on" : ""}`}
+                  title={o.label}
+                  aria-label={o.label}
+                  aria-pressed={opts.width === o.id}
+                  onClick={() => setOpt({ width: o.id })}
+                >
+                  {o.glyph}
+                </button>
+              ))}
+                </>
+              )}
+              {key === "stroke" && (
+                <>
+              {STROKES.map((o) => (
+                <button
+                  key={o.id}
+                  className={`ann-btn ann-btn--sm${opts.stroke === o.id ? " ann-btn--on" : ""}`}
+                  title={o.label}
+                  aria-label={o.label}
+                  aria-pressed={opts.stroke === o.id}
+                  onClick={() => setOpt({ stroke: o.id })}
+                >
+                  {o.glyph}
+                </button>
+              ))}
+                </>
+              )}
+              {key === "numbered" && (
+                <button
+                  className={`ann-btn ann-btn--sm ann-btn--text${opts.numbered ? " ann-btn--on" : ""}`}
+                  title={opts.numbered ? "Numbered labels (01, 02…): on" : "Numbered labels: off"}
+                  aria-pressed={opts.numbered}
+                  onClick={() => setOpt({ numbered: !opts.numbered })}
+                >
+                  01
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="ann-palette" role="toolbar" aria-label="Annotate">
         {TOOLS.map((t) => (
@@ -435,8 +721,9 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
           <button
             key={c.id}
             className={`ann-swatch${color.id === c.id ? " ann-swatch--on" : ""}`}
+            data-ink={c.id}
             style={{ background: c.stroke }}
-            title={`${c.id} (C cycles colours)`}
+            title={`${c.id === "black" ? "black (white in dark mode)" : c.id} (C cycles colours)`}
             aria-label={`${c.id} colour`}
             onClick={() => setColor(c)}
           />
@@ -468,6 +755,22 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
         <button className="ann-btn ann-btn--flip" title="Bring selection forward" onClick={() => bringForward(api)}>
           <Icon icon={LayersIcon} size={18} />
         </button>
+        <AutoArrange api={api} />
+        <button
+          className="ann-btn"
+          title="Select callout pair: label and arrow together, to move them as one"
+          onClick={() => {
+            const ids = calloutParts(api, Object.keys(api.getAppState().selectedElementIds));
+            if (!ids.length) {
+              notify("Select a callout's label or arrow first");
+              return;
+            }
+            setTool("select");
+            api.selection.select(ids);
+          }}
+        >
+          <Icon icon={PairIcon} size={18} />
+        </button>
         <button
           className="ann-btn"
           title="Copy all callout labels as a list"
@@ -487,6 +790,7 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
         <button className="ann-btn" title="Done (Esc)" onClick={onExit}>
           <Icon icon={CloseIcon} size={18} />
         </button>
+      </div>
       </div>
     </>
   );

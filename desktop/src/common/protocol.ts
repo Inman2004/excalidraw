@@ -159,6 +159,7 @@ export type FrameRequest =
   | { op: "callout-edit"; groupId: string; label?: string; color?: string; remove?: boolean }
   | { op: "callout-reveal"; groupId: string; target?: boolean }
   | { op: "callouts-renumber" }
+  | { op: "callouts-arrange"; density?: "compact" | "balanced" | "spacious"; renumber?: boolean }
   | { op: "report" }
   /** render any scene JSON to a small PNG data URL (thumbnails) */
   | { op: "render"; json: string; max: number };

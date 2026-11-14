@@ -6,3 +6,7 @@ export { RecordCircleIcon as EllipseIcon } from "@solar-icons/react/line-duotone
 export { RulerIcon as MeasureIcon } from "@solar-icons/react/line-duotone/ruler";
 export { LockKeyholeIcon as LockIcon } from "@solar-icons/react/line-duotone/lock-keyhole";
 export { LockKeyholeUnlockedIcon as UnlockIcon } from "@solar-icons/react/line-duotone/lock-keyhole-unlocked";
+export { CursorIcon as SelectIcon } from "@solar-icons/react/line-duotone/cursor";
+export { ArrowRightUpIcon as PlainArrowIcon } from "@solar-icons/react/line-duotone/arrow-right-up";
+export { HashtagCircleIcon as NumberIcon } from "@solar-icons/react/line-duotone/hashtag-circle";
+export { LinkIcon as PairIcon } from "@solar-icons/react/line-duotone/link";
