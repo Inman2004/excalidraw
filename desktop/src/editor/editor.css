@@ -376,6 +376,14 @@ textarea.ann-input {
   background: var(--default-border-color);
 }
 
+/* the toast sits at the top, clear of the annotate bars */
+.ann-auto .ann-toast {
+  position: fixed;
+  top: 76px;
+  bottom: auto;
+  z-index: 31;
+}
+
 .ann-toast {
   display: flex;
   align-items: center;

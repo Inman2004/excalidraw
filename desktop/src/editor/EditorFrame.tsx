@@ -37,6 +37,7 @@ import {
   CloseIcon,
   Icon,
   InfoIcon,
+  UpdateIcon,
   MoonIcon,
   OpenIcon,
   PinIcon,
@@ -293,6 +294,9 @@ const DesktopMenu = ({ menu }: { menu: MenuState }) => (
     >
       Recovery Center…
     </MainMenu.Item>
+    <MainMenu.Item icon={<Icon icon={UpdateIcon} />} onSelect={() => runCommand("checkUpdates")}>
+      Check for updates…
+    </MainMenu.Item>
     <MainMenu.Item icon={<Icon icon={InfoIcon} />} onSelect={() => runCommand("about")}>
       About
     </MainMenu.Item>
@@ -336,6 +340,7 @@ const PALETTE_ITEMS = [
   paletteItem("Toggle auto-save", "toggleAutosave", AutosaveIcon),
   paletteItem("Toggle always on top", "togglePin", PinIcon, null, ["pin"]),
   paletteItem("Home", "home", HomeIcon, null, ["start"]),
+  paletteItem("Check for updates…", "checkUpdates", UpdateIcon, null, ["update", "upgrade", "version"]),
   paletteItem("About Paperimo", "about", InfoIcon),
 ];
 

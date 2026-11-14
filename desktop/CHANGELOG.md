@@ -2,6 +2,19 @@
 
 All notable changes to Paperimo. Versions follow [semantic versioning](https://semver.org).
 
+## 0.1.1
+
+### Automatic updates
+- Paperimo now checks for new versions on its own (shortly after start, then every few hours)
+  and offers them in an in-app dialog: Install and restart, Later, or Skip this version.
+  Updates are signed and verified before installing; your tabs and unsaved work are saved first.
+- "Check for updates…" in the main menu and the command palette (Ctrl+/).
+- Coming from 0.1.0: install 0.1.1 once by hand; later versions arrive automatically.
+
+### Other
+- Credits and the installer's publisher now read rvimman.
+- New user guide with screenshots (docs/GUIDE.md).
+
 ## 0.1.0 — first public release
 
 The first release of Paperimo: a notepad-like Windows app for the Excalidraw drawing engine.

@@ -5,13 +5,17 @@
   Tabs like a text editor. Files that don't get lost. Screenshots you can mark up in seconds.</p>
 
   <p>
-    <a href="https://github.com/Inman2004/excalidraw/releases/latest"><img alt="Download for Windows" src="https://img.shields.io/badge/Download-Windows%20installer-fbbf24?style=for-the-badge&logo=windows" /></a>
+    <a href="https://github.com/Inman2004/paperimo/releases/latest"><img alt="Download for Windows" src="https://img.shields.io/badge/Download-Windows%20installer-fbbf24?style=for-the-badge&logo=windows" /></a>
   </p>
   <p>
-    <a href="https://github.com/Inman2004/excalidraw/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Inman2004/excalidraw?label=latest" /></a>
+    <a href="https://github.com/Inman2004/paperimo/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Inman2004/paperimo?label=latest" /></a>
     <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-blue.svg" /></a>
   </p>
 </div>
+
+<p align="center">
+  <img src="docs/screenshots/arranged.png" width="860" alt="Paperimo: a wireframe with six review callouts lined up beside it" />
+</p>
 
 ---
 
@@ -33,7 +37,7 @@ already know still works and your files open fine on excalidraw.com too.
 
 ## Get it
 
-1. Grab **`Paperimo_x.y.z_x64-setup.exe`** from the [latest release](https://github.com/Inman2004/excalidraw/releases/latest).
+1. Grab **`Paperimo_x.y.z_x64-setup.exe`** from the [latest release](https://github.com/Inman2004/paperimo/releases/latest).
 2. Run it. It installs per user, so you don't need admin rights.
 3. Double-click any `.excalidraw` file and it opens right in the app.
 
@@ -42,9 +46,12 @@ already know still works and your files open fine on excalidraw.com too.
 
 It needs Windows 10 or 11 with the WebView2 runtime. Windows 11 already has it, and the installer fetches it on Windows 10 if it's missing.
 
-**Updating:** there's no auto-update yet. Download the newest installer and run it over the old one; your
-drawings, open tabs and settings stay put. What changed in each version is in the
-[changelog](desktop/CHANGELOG.md).
+**Updating:** Paperimo updates itself. It checks for new versions on its own and asks before
+installing, and your tabs and unsaved work are saved first. You can also use **Check for updates…** in
+the menu. (Coming from 0.1.0? Install the newest version once by hand; after that it's automatic.)
+What changed in each version is in the [changelog](desktop/CHANGELOG.md).
+
+**New here?** The [user guide](docs/GUIDE.md) walks through everything with screenshots.
 
 ## What you get
 
@@ -65,18 +72,27 @@ drawings, open tabs and settings stay put. What changed in each version is in th
   version in a new tab, so nothing is overwritten until you decide. Each version shows a thumbnail, so you can spot the right one at a glance.
 
 ### ✍️ Mark up screenshots in seconds
-Press **Ctrl+Shift+A** (or the **Annotate** button) and:
-- **Callouts:** click the spot, click where the label goes, type, press Enter. You get a numbered label
-  (`01`, `02`…) with an arrow pointing exactly where you clicked. It's grouped, so it moves and undoes as one piece.
-- **Highlight**, **box**, **ellipse** and **measure** (it even reports real image pixels when you measure on a photo).
-- Four colours, keys **1–5** to switch tools, **C** to cycle colours, hold **Space** to pan.
+Press **Ctrl+Shift+A** (or the **Annotate** button):
+
+![Annotate mode with callouts, the annotate bar and its options](docs/screenshots/annotate.png)
+
+- **Callouts:** click the spot, click where the label goes, type, press Enter. You get a clean white label
+  (`01`, `02`…) with an arrow pointing exactly where you clicked. Pick the label style (white, text only,
+  tinted, outline), the arrow (straight, curved, elbow), its head and line before you click.
+- **Real arrows:** the arrow is attached to its label like any Excalidraw arrow. Bend it, re-point it,
+  restyle it; move the label and the arrow follows. The **Select** tool (**V**) edits without leaving annotate mode.
+- **Auto arrange:** place labels anywhere, press **Auto**, and they line up in neat columns beside the
+  picture: evenly spaced, matching widths, no crossing arrows. Balanced, compact or spacious; one undo.
+- **Arrow**, **number markers**, **highlight**, **box**, **circle** and **measure** (it even reports real image
+  pixels when you measure on a photo).
 - **Ctrl+Shift+V** with a screenshot on your clipboard opens it in a new tab, locked as the background,
   with annotate mode already on.
 - The **Callouts** panel lists every callout: rename, recolour, delete, renumber, or
   **copy them all as a text report** for a bug ticket or review email.
 
 ### 📤 Export without fuss
-**Ctrl+Shift+E** opens a proper export dialog with a live preview:
+**Ctrl+Shift+E** opens a proper export dialog with a live preview
+([see it in the guide](docs/GUIDE.md#export)):
 PNG, SVG or JPEG; the whole drawing, just the selection, or a single frame; 1–4× scale; transparent or
 solid background; dark mode; and optionally the scene embedded so the image opens again as an editable
 drawing. Save it to a file or copy it straight to the clipboard.
@@ -122,8 +138,8 @@ You'll need [Node.js](https://nodejs.org) 20+, [Yarn](https://yarnpkg.com) (for 
 [Rust](https://rustup.rs) with the MSVC toolchain.
 
 ```bash
-git clone https://github.com/Inman2004/excalidraw.git
-cd excalidraw
+git clone https://github.com/Inman2004/paperimo.git
+cd paperimo
 yarn install
 cd desktop
 npm ci            # installs the exact versions from package-lock.json
@@ -133,7 +149,8 @@ npx tauri build   # make the installer (src-tauri/target/release/bundle/nsis)
 
 The app lives in [`desktop/`](desktop). It builds Excalidraw straight from this monorepo's source
 (pinned commit `e1b7aacb3`) without changing a single line of it. Curious how it fits together, with
-one isolated editor per tab, Rust-side file safety, and so on? See [`desktop/NOTES.md`](desktop/NOTES.md).
+one isolated editor per tab, Rust-side file safety, signed updates, and so on? See
+[`desktop/NOTES.md`](desktop/NOTES.md).
 
 ## Credits
 
@@ -142,6 +159,6 @@ one isolated editor per tab, Rust-side file safety, and so on? See [`desktop/NOT
   their name; Paperimo uses it only to say what it's built on and which files it opens.
 - **[Solar Icons](https://www.figma.com/community/file/1166831539721848736)** by 480 Design, CC BY 4.0.
 - **[Tauri](https://tauri.app)** for the tiny, fast native shell.
-- Built with ♥ by **moon**.
+- Built with ♥ by **rvimman**.
 
-Found a bug or have an idea? [Open an issue](https://github.com/Inman2004/excalidraw/issues). I'd love to hear how you use it.
+Found a bug or have an idea? [Open an issue](https://github.com/Inman2004/paperimo/issues). I'd love to hear how you use it.

@@ -1,6 +1,6 @@
 [package]
 name = "paperimo"
-version = "0.1.0"
+version = "0.1.1"
 description = "Paperimo: a notepad-like desktop sketchbook built on the Excalidraw engine"
 edition = "2021"
 
@@ -28,3 +28,7 @@ codegen-units = 1
 lto = true
 opt-level = "s"
 strip = true
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-process = "2"
+tauri-plugin-updater = "2"

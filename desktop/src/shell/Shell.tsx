@@ -19,6 +19,7 @@ import { RecoveryCenter } from "./RecoveryCenter";
 import { activeDoc, resolvedTheme, setState, showDialog, toast, useStore } from "./store";
 import { TabBar } from "./TabBar";
 import { DialogHost, Modal } from "./ui/Dialogs";
+import { Updater } from "./Updater";
 import { Toasts } from "./ui/Toasts";
 
 import pkg from "../../package.json";
@@ -308,6 +309,7 @@ export const Shell = () => {
       <RecoveryCenter />
       {about && <AboutDialog onClose={() => setAbout(false)} />}
       <DialogHost />
+      <Updater />
       <Toasts />
     </div>
   );

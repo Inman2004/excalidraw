@@ -55,6 +55,7 @@ export const SaveIcon = DisketteIcon;
 export const SaveAsIcon = FilePenIcon;
 export const ExportIcon = SolarExportIcon;
 export const ImportIcon = SolarImportIcon;
+export { CloudDownloadIcon as UpdateIcon } from "@solar-icons/react/line-duotone/cloud-download";
 export const PinIcon = SolarPinIcon;
 export const SunIcon = SolarSunIcon;
 export const MoonIcon = SolarMoonIcon;

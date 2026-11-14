@@ -1,7 +1,7 @@
 {
   "name": "paperimo",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,11 +12,13 @@
     "@solar-icons/react": "^2.5.0",
     "@tauri-apps/api": "2.12.4",
     "@tauri-apps/plugin-clipboard-manager": "^2.5.0",
-    "@tauri-apps/plugin-dialog": "2.8.4"
+    "@tauri-apps/plugin-dialog": "2.8.4",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-updater": "^2.14.1"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.12.4"
   },
   "excalidrawCommit": "e1b7aacb356a492aa1e0fc6eb57b8896124027f0",
-  "author": "moon"
+  "author": "rvimman"
 }

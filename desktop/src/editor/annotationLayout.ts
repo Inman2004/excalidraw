@@ -200,17 +200,55 @@ export const autoArrange = (
   const covering = others.filter(
     (el) => el.x < box.maxX && el.x + el.width > box.minX && el.y < box.maxY && el.y + el.height > box.minY,
   );
-  const area = boundsOf(covering, tips);
-  const cx = (area.minX + area.maxX) / 2;
-  const cy = (area.minY + area.maxY) / 2;
-  const wide = area.maxX - area.minX > 2 * (area.maxY - area.minY);
+  const core = boundsOf(covering, tips);
+  const cx = (core.minX + core.maxX) / 2;
+  const cy = (core.minY + core.maxY) / 2;
+  const wide = core.maxX - core.minX > 2 * (core.maxY - core.minY);
+
+  // other drawings next to the content (a second frame, a diagram) are
+  // obstacles: cards go past them, and a side without any is preferred
+  const reach = offset + MAX_CARD_WIDTH * k;
+  const hits = (el: ExcalidrawElement, b: Box) =>
+    el.x < b.maxX && el.x + el.width > b.minX && el.y < b.maxY && el.y + el.height > b.minY;
+  const zones: Record<Side, Box> = wide
+    ? {
+        top: { minX: core.minX, maxX: core.maxX, minY: core.minY - reach, maxY: core.minY },
+        bottom: { minX: core.minX, maxX: core.maxX, minY: core.maxY, maxY: core.maxY + reach },
+        left: { minX: core.minX - reach, maxX: core.minX, minY: core.minY, maxY: core.maxY },
+        right: { minX: core.maxX, maxX: core.maxX + reach, minY: core.minY, maxY: core.maxY },
+      }
+    : {
+        left: { minX: core.minX - reach, maxX: core.minX, minY: core.minY, maxY: core.maxY },
+        right: { minX: core.maxX, maxX: core.maxX + reach, minY: core.minY, maxY: core.maxY },
+        top: { minX: core.minX, maxX: core.maxX, minY: core.minY - reach, maxY: core.minY },
+        bottom: { minX: core.minX, maxX: core.maxX, minY: core.maxY, maxY: core.maxY + reach },
+      };
+  const outside = others.filter((el) => !hits(el, core));
+  const blocked = (side: Side) => outside.filter((el) => hits(el, zones[side]));
+  const area: Box = { ...core };
+  for (const side of ["left", "right", "top", "bottom"] as Side[]) {
+    const obstacles = blocked(side);
+    if (!obstacles.length) {
+      continue;
+    }
+    if (side === "left") area.minX = Math.min(area.minX, ...obstacles.map((el) => el.x));
+    if (side === "right") area.maxX = Math.max(area.maxX, ...obstacles.map((el) => el.x + el.width));
+    if (side === "top") area.minY = Math.min(area.minY, ...obstacles.map((el) => el.y));
+    if (side === "bottom") area.maxY = Math.max(area.maxY, ...obstacles.map((el) => el.y + el.height));
+  }
 
   // ---- sides by target position, then rebalance a much busier side
   const sides: Record<Side, CalloutGroup[]> = { left: [], right: [], top: [], bottom: [] };
   const [a, b]: [Side, Side] = wide ? ["top", "bottom"] : ["left", "right"];
   groups.forEach((g, i) => {
     const t = tips[i];
-    sides[wide ? (t.y < cy ? a : b) : t.x < cx ? a : b].push(g);
+    // a blocked side gives its cards to a free opposite side
+    let side: Side = wide ? (t.y < cy ? a : b) : t.x < cx ? a : b;
+    const other: Side = side === a ? b : a;
+    if (blocked(side).length && !blocked(other).length) {
+      side = other;
+    }
+    sides[side].push(g);
   });
   // a card changes side only when its side can't fit beside the content
   // (moving it costs a long arrow across the content)
@@ -220,10 +258,13 @@ export const autoArrange = (
       const c = buildCard(g, (g.text as any).originalText ?? (g.text as any).text, null);
       return sum + (wide ? c.width + 2 * padX : Math.max(MIN_CARD_HEIGHT * k, c.label.height + 2 * padY)) + gap;
     }, -gap);
-  const room = (wide ? area.maxX - area.minX : area.maxY - area.minY) * 1.15;
+  const room = (wide ? core.maxX - core.minX : core.maxY - core.minY) * 1.15;
+  const freeA = !blocked(a).length;
+  const freeB = !blocked(b).length;
   for (;;) {
     const [from, to] = sides[a].length > sides[b].length ? [sides[a], sides[b]] : [sides[b], sides[a]];
-    if (from.length - to.length < 2 || extent(from) <= room) {
+    const toFree = to === sides[a] ? freeA : freeB;
+    if (from.length - to.length < 2 || extent(from) <= room || (!toFree && freeA !== freeB)) {
       break;
     }
     // the card whose target is nearest the middle changes side
@@ -236,8 +277,8 @@ export const autoArrange = (
   const edgeDist = (g: CalloutGroup) => {
     const t = tipOf(g);
     return wide
-      ? Math.min(t.x - area.minX, area.maxX - t.x)
-      : Math.min(t.y - area.minY, area.maxY - t.y);
+      ? Math.min(t.x - core.minX, core.maxX - t.x)
+      : Math.min(t.y - core.minY, core.maxY - t.y);
   };
   // rows only take what fits across the content; columns absorb the rest
   const across = (row: CalloutGroup[]) =>
@@ -245,7 +286,7 @@ export const autoArrange = (
       const card = buildCard(g, (g.text as any).originalText ?? (g.text as any).text, null);
       return sum + (wide ? Math.max(MIN_CARD_HEIGHT * k, card.label.height + 2 * padY) : card.label.width + 2 * padX) + gap;
     }, -gap);
-  const span = wide ? area.maxY - area.minY : area.maxX - area.minX;
+  const span = wide ? core.maxY - core.minY : core.maxX - core.minX;
   // always relieve the longest column first, so both end up similar
   const skipped = new Set<CalloutGroup>();
   for (;;) {
@@ -334,8 +375,8 @@ export const autoArrange = (
     );
     // keep the run inside the content's span when it fits there, so arrows
     // run straight in instead of cutting across corners and other cards
-    const lo = vertical ? area.minY : area.minX;
-    const hi = vertical ? area.maxY : area.maxX;
+    const lo = vertical ? core.minY : core.minX;
+    const hi = vertical ? core.maxY : core.maxX;
     const total = row.reduce((sum, p) => sum + (vertical ? p.height : p.width) + gap, -gap);
     if (row.length && total <= hi - lo) {
       let floor = lo;

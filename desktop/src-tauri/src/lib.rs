@@ -79,6 +79,8 @@ pub fn run() {
                 let _ = app.emit("open-files", files);
             }
         }))
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         // remembers window size, position and maximized state across restarts

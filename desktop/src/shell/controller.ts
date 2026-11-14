@@ -1526,6 +1526,9 @@ export const runCommand = async (
     case "about":
       window.dispatchEvent(new Event("dsk-about"));
       break;
+    case "checkUpdates":
+      window.dispatchEvent(new Event("dsk-check-updates"));
+      break;
     case "home":
       showHome();
       break;

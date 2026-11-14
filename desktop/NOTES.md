@@ -85,3 +85,21 @@ Fixed after the first measurement:
 Remaining: while Excalidraw renders a very large export the UI runs at ~40–65 % of frames
 (the engine draws on the main thread); the dialog shows a busy state. Timings come from
 `window.__dskMetrics` (startup and load) and in-page `performance.now()`.
+
+## Releasing and updates
+The app updates itself from GitHub Releases (`tauri-plugin-updater`). It reads
+`https://github.com/Inman2004/paperimo/releases/latest/download/latest.json` and only installs
+an installer whose signature matches the public key in `tauri.conf.json`.
+
+- Signing key: `%USERPROFILE%\.tauri\paperimo-updater.key` (no password). **Back it up.** Without
+  it no further update can be published to existing installs. Never commit it.
+- Release steps:
+  1. Bump `version` in `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `package.json`,
+     and add the version's section to `CHANGELOG.md` (it becomes the update notes).
+  2. Build signed: set `TAURI_SIGNING_PRIVATE_KEY` to the key file's contents and
+     `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` to an empty string, then `npx tauri build --bundles nsis`.
+  3. `node scripts/latest-json.mjs`
+  4. Create release `desktop-vX.Y.Z` and upload `Paperimo_X.Y.Z_x64-setup.exe`, its `.sig` and
+     `latest.json` (all in `src-tauri/target/release/bundle/nsis/`). Mark it Latest.
+- The check runs 8 s after start and every 6 h; "Check for updates…" runs it on demand.
+  Before installing, the app saves every tab and the session (the NSIS installer exits the app).

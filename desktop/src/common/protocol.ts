@@ -23,6 +23,7 @@ export type ShellCommand =
   | "theme"
   | "openRecent"
   | "about"
+  | "checkUpdates"
   | "home"
   | "export"
   | "switcher"
