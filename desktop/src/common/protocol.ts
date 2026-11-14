@@ -92,6 +92,8 @@ export type FromFrame =
   | { type: "loaded"; baseline: Snapshot }
   | { type: "changed"; version: number }
   | { type: "snapshot"; snapshot: Snapshot; reqId?: number }
+  /** only the view moved (pan/zoom): no scene serialization */
+  | { type: "view"; view: Snapshot["view"] }
   | { type: "command"; command: ShellCommand; arg?: string | number }
   | { type: "theme-changed"; theme: Theme }
   | { type: "library-changed"; items: LibraryItemsJSON }
@@ -146,6 +148,16 @@ export type CalloutInfo = {
   number: string;
   label: string;
   color: string;
+  numbered: boolean;
+  /** position number (1-based) */
+  n: number;
+};
+
+/** Mirrors the editor's Numbering (kept here so the shell needn't import it). */
+export type CalloutNumbering = {
+  numbered: boolean;
+  format: "1" | "01" | "a" | "A" | "custom";
+  template: string;
 };
 
 export type FrameRequest =
@@ -160,6 +172,10 @@ export type FrameRequest =
   | { op: "callout-edit"; groupId: string; label?: string; color?: string; remove?: boolean }
   | { op: "callout-reveal"; groupId: string; target?: boolean }
   | { op: "callouts-renumber" }
+  | { op: "callouts-reorder"; ids: string[] }
+  | { op: "callout-move"; groupId: string; to: number }
+  | { op: "callouts-numbering"; numbering: CalloutNumbering }
+  | { op: "callouts-numbering-info" }
   | { op: "callouts-arrange"; density?: "compact" | "balanced" | "spacious"; renumber?: boolean }
   | { op: "report" }
   /** render any scene JSON to a small PNG data URL (thumbnails) */

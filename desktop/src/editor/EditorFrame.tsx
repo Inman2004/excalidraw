@@ -51,8 +51,10 @@ import {
 } from "../common/Icon";
 import { isBrowserKey, shortcutToCommand } from "../common/protocol";
 
-import { lockAsBackground } from "./annotate";
+import { lockAsBackground, toggleImageLock } from "./annotate";
+import { LockIcon as LockImageIcon } from "./annotateIcons";
 import { AnnotateLayer } from "./AnnotateLayer";
+import { CalloutEditor } from "./CalloutEditor";
 import { CalloutWatch } from "./CalloutWatch";
 import { insertImages } from "./insertImages";
 import { Presenter } from "./Presenter";
@@ -333,6 +335,14 @@ const PALETTE_ITEMS = [
   paletteItem("Frames…", "frames", FramesIcon, null, ["slides", "order"]),
   paletteItem("Present", "present", PresentIcon, "F5", ["slideshow", "presentation"]),
   paletteItem("Callouts…", "annotations", CalloutListIcon, null, ["annotations", "report"]),
+  {
+    label: "Lock / unlock image position",
+    category: "Desktop",
+    icon: <Icon icon={LockImageIcon} />,
+    shortcut: null,
+    keywords: ["pin", "background", "screenshot", "freeze"],
+    perform: () => window.dispatchEvent(new Event("dsk-toggle-image-lock")),
+  },
   paletteItem("File history…", "history", HistoryClockIcon, "Ctrl+Shift+H", ["backup", "restore", "version"]),
   paletteItem("New from template…", "templates", TemplatesIcon, null, ["flowchart", "wireframe"]),
   paletteItem("Import library…", "importLibrary", LibraryIconD, null, ["excalidrawlib"]),
@@ -357,6 +367,21 @@ export const EditorFrame = () => {
   const [api, setApi] = useState<ExcalidrawImperativeAPI | null>(null);
   const [annotating, setAnnotating] = useState(false);
   const [presenting, setPresenting] = useState<string[] | null>(null);
+  useEffect(() => {
+    const onToggle = () => {
+      const api = apiRef.current;
+      if (!api) return;
+      const r = toggleImageLock(api);
+      api.setToast({
+        message: !r
+          ? "Select an image to lock its position"
+          : `Image position ${r.action}${r.count > 1 ? ` (${r.count} images)` : ""}`,
+        duration: 2500,
+      });
+    };
+    window.addEventListener("dsk-toggle-image-lock", onToggle);
+    return () => window.removeEventListener("dsk-toggle-image-lock", onToggle);
+  }, []);
   const presentingRef = useRef(false);
   presentingRef.current = !!presenting;
   const shiftPaste = useRef(false);
@@ -365,14 +390,32 @@ export const EditorFrame = () => {
   const debounceTimer = useRef<number | undefined>(undefined);
   const firstPendingAt = useRef<number | null>(null);
   const lastLibraryJSON = useRef<string>("[]");
+  /** scene version of the last full snapshot sent to the shell */
+  const snappedVersion = useRef<number | null>(null);
+  const viewTimer = useRef<number | undefined>(undefined);
 
   const flushSnapshot = useCallback(() => {
     window.clearTimeout(debounceTimer.current);
     firstPendingAt.current = null;
+    window.clearTimeout(viewTimer.current);
     const api = apiRef.current;
     if (api) {
-      post({ type: "snapshot", snapshot: takeSnapshot(api) });
+      const snapshot = takeSnapshot(api);
+      snappedVersion.current = snapshot.version;
+      post({ type: "snapshot", snapshot });
     }
+  }, []);
+
+  // panning/zooming only: tell the shell the new view, without serializing
+  // the whole drawing (images make that expensive enough to stutter)
+  const scheduleView = useCallback(() => {
+    window.clearTimeout(viewTimer.current);
+    viewTimer.current = window.setTimeout(() => {
+      const s = apiRef.current?.getAppState();
+      if (s) {
+        post({ type: "view", view: { scrollX: s.scrollX, scrollY: s.scrollY, zoom: s.zoom.value } });
+      }
+    }, 400);
   }, []);
 
   // trailing debounce + max interval: continuous edits still snapshot every 1 s
@@ -606,6 +649,13 @@ export const EditorFrame = () => {
       onExcalidrawAPI={(next) => {
         apiRef.current = next;
         setApi(next);
+        if (import.meta.env.DEV) {
+          // scripted checks drive the editor through these (dev server only)
+          (window as any).__api = next;
+          void import("./annotate").then((m) => ((window as any).__ann = m));
+          void import("./callouts").then((m) => ((window as any).__callouts = m));
+          void import("@excalidraw/excalidraw").then((m) => ((window as any).__X = m));
+        }
       }}
       renderTopRightUI={() => (
         <>
@@ -633,7 +683,10 @@ export const EditorFrame = () => {
             )}
           {api &&
             createPortal(
-              <CalloutWatch api={api} />,
+              <>
+                <CalloutWatch api={api} />
+                <CalloutEditor api={api} />
+              </>,
               document.querySelector(".excalidraw") ?? document.body,
             )}
           {annotating &&
@@ -671,16 +724,23 @@ export const EditorFrame = () => {
           baselineSent.current = true;
           lastVersion.current = version;
           // the first serialization is the baseline the shell compares against
-          requestAnimationFrame(() =>
-            post({ type: "loaded", baseline: takeSnapshot(api) }),
-          );
+          requestAnimationFrame(() => {
+            const baseline = takeSnapshot(api);
+            snappedVersion.current = baseline.version;
+            post({ type: "loaded", baseline });
+          });
           return;
         }
         if (version !== lastVersion.current) {
           lastVersion.current = version;
           post({ type: "changed", version });
         }
-        scheduleSnapshot();
+        const sceneVersion = getSceneVersion(api.getSceneElementsIncludingDeleted());
+        if (sceneVersion === snappedVersion.current && firstPendingAt.current === null) {
+          scheduleView();
+        } else {
+          scheduleSnapshot();
+        }
       }}
       UIOptions={{
         canvasActions: {

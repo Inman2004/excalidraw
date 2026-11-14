@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Editor</title>
+    <script>
+      // Load Excalidraw's fonts (Excalifont, Virgil, …) from the app itself. Without this the
+      // engine resolves bundled font paths against the esm.sh CDN, where they don't exist, and
+      // drawings fall back to a plain system font (and could never work offline).
+      window.EXCALIDRAW_ASSET_PATH = location.origin + "/";
+    </script>
   </head>
   <body>
     <div id="root"></div>

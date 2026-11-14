@@ -30,20 +30,24 @@ import {
   addMeasure,
   bringForward,
   calloutReportText,
-  formatNumber,
+  calloutText,
   labelColors,
+  NUMBER_FORMATS,
   lockAsBackground,
+  lockedImageCount,
   measureLabel,
+  toggleImageLock,
   nextCalloutNumber,
   preloadImageSizes,
   sendToBack,
-  unlockBackground,
 } from "./annotate";
+import { calloutAt, docNumbering, setNumbering } from "./callouts";
 import {
   BoxIcon,
   CalloutIcon,
   EllipseIcon,
   HighlightIcon,
+  BackgroundIcon,
   LockIcon,
   MeasureIcon,
   NumberIcon,
@@ -60,6 +64,7 @@ import type {
   ArrowShape,
   CalloutOptions,
   LabelStyle,
+  Numbering,
   Point,
   StrokeStyle,
 } from "./annotate";
@@ -70,7 +75,7 @@ type Props = {
 };
 
 const TOOLS: { id: AnnotateTool; label: string; hint: string; icon: typeof CalloutIcon }[] = [
-  { id: "select", label: "Select", hint: "Click to select, drag handles to bend or move, double-click to edit text", icon: SelectIcon },
+  { id: "select", label: "Select", hint: "Click to select, drag handles to bend or move, double-click a label to edit it", icon: SelectIcon },
   { id: "callout", label: "Callout", hint: "Click the spot, click where the label goes, type", icon: CalloutIcon },
   { id: "arrow", label: "Arrow", hint: "Drag from the start to the tip", icon: PlainArrowIcon },
   { id: "number", label: "Number marker", hint: "Click to drop the next number", icon: NumberIcon },
@@ -386,8 +391,17 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
       return;
     }
     const p = toScene(api, e.clientX, e.clientY);
+    // clicks on an existing label don't make a new callout or marker:
+    // a double-click there edits the label instead
+    if ((tool === "callout" || tool === "number") && calloutAt(api, p)) {
+      e.preventDefault();
+      if (e.detail < 2) {
+        notify("Double-click a label to edit it");
+      }
+      return;
+    }
     if (tool === "number") {
-      addNumber(api, p, color);
+      addNumber(api, p, color, current.format);
       focusEditor();
       return;
     }
@@ -447,14 +461,32 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
 
   const commitCallout = () => {
     if (anchor && labelAt) {
-      addCallout(api, anchor, labelAt, textRef.current, color, opts);
+      addCallout(api, anchor, labelAt, textRef.current, color, { ...opts, ...numbering() });
     }
     reset();
     focusEditor();
   };
   commitRef.current = commitCallout;
 
-  const next = formatNumber(nextCalloutNumber(api.getSceneElements()));
+  /** one numbering per drawing: new callouts follow the existing ones */
+  const numbering = (): Numbering =>
+    docNumbering(api) ?? { numbered: opts.numbered, format: opts.format, template: opts.template };
+  const current = numbering();
+  const lockedImages = lockedImageCount(api);
+  const next = calloutText(nextCalloutNumber(api.getSceneElements()), "", { ...current, numbered: true }).prefix;
+
+  const chooseNumbering = (patch: Partial<Numbering>) => {
+    const n = { ...current, ...patch };
+    setOpt(n);
+    if (setNumbering(api, n)) {
+      const count = api.getSceneElements().filter((el) => el.type === "rectangle" && typeof (el.customData as any)?.annotation?.callout === "number").length;
+      notify(
+        n.numbered
+          ? `${count} callout${count === 1 ? "" : "s"} now numbered ${calloutText(1, "", n).prefix}, ${calloutText(2, "", n).prefix}…`
+          : `Numbers hidden on ${count} callout${count === 1 ? "" : "s"}`,
+      );
+    }
+  };
 
   // ------------------------------------------------------------ preview
   const preview = () => {
@@ -690,14 +722,7 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
                 </>
               )}
               {key === "numbered" && (
-                <button
-                  className={`ann-btn ann-btn--sm ann-btn--text${opts.numbered ? " ann-btn--on" : ""}`}
-                  title={opts.numbered ? "Numbered labels (01, 02…): on" : "Numbered labels: off"}
-                  aria-pressed={opts.numbered}
-                  onClick={() => setOpt({ numbered: !opts.numbered })}
-                >
-                  01
-                </button>
+                <NumberingMenu value={current} onChange={chooseNumbering} />
               )}
             </span>
           ))}
@@ -730,24 +755,37 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
         ))}
         <span className="ann-sep" />
         <button
-          className="ann-btn"
-          title="Lock image as background (selected image, or the only image)"
+          className={`ann-btn${lockedImages ? " ann-btn--on" : ""}`}
+          title={
+            lockedImages
+              ? `Image position locked (${lockedImages}). Click to unlock, or select another image to lock it too`
+              : "Lock image position (the selected image, or the only one) so it can't move while you annotate"
+          }
+          aria-pressed={lockedImages > 0}
           onClick={() => {
-            const n = lockAsBackground(api);
-            notify(n ? `Locked ${n} image${n > 1 ? "s" : ""} as background` : "Select an image to lock first");
+            const r = toggleImageLock(api);
+            setTick((t) => t + 1);
+            notify(
+              !r
+                ? "Select an image to lock its position"
+                : r.action === "locked"
+                ? `Image position locked${r.count > 1 ? ` (${r.count} images)` : ""}. Click again to unlock`
+                : `Image position unlocked${r.count > 1 ? ` (${r.count} images)` : ""}`,
+            );
           }}
         >
-          <Icon icon={LockIcon} size={18} />
+          <Icon icon={lockedImages ? LockIcon : UnlockIcon} size={18} />
         </button>
         <button
           className="ann-btn"
-          title="Unlock background images"
+          title="Lock as background: send the selected image (or the only one) to the back and lock it"
           onClick={() => {
-            const n = unlockBackground(api);
-            notify(n ? `Unlocked ${n} image${n > 1 ? "s" : ""}` : "No locked images");
+            const n = lockAsBackground(api);
+            setTick((t) => t + 1);
+            notify(n ? `Locked ${n} image${n > 1 ? "s" : ""} as background` : "Select an image first");
           }}
         >
-          <Icon icon={UnlockIcon} size={18} />
+          <Icon icon={BackgroundIcon} size={18} />
         </button>
         <button className="ann-btn" title="Send selection to back" onClick={() => sendToBack(api)}>
           <Icon icon={LayersIcon} size={18} />
@@ -793,5 +831,113 @@ export const AnnotateLayer = ({ api, onExit }: Props) => {
       </div>
       </div>
     </>
+  );
+};
+
+/** Off · 1 · 01 · a · A · custom pattern, for the whole drawing. */
+const NumberingMenu = ({
+  value,
+  onChange,
+}: {
+  value: Numbering;
+  onChange: (patch: Partial<Numbering>) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [template, setTemplate] = useState(value.template);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => setTemplate(value.template), [value.template]);
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const close = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("pointerdown", close, { capture: true });
+    return () => window.removeEventListener("pointerdown", close, { capture: true });
+  }, [open]);
+  const sample = !value.numbered
+    ? "Off"
+    : value.format === "custom"
+    ? calloutText(1, "", value).prefix
+    : NUMBER_FORMATS.find((f) => f.id === value.format)?.sample ?? "01";
+  const applyTemplate = () => {
+    if (template.trim()) {
+      onChange({ numbered: true, format: "custom", template });
+    }
+  };
+  return (
+    <span ref={ref} className="ann-num-anchor">
+      <button
+        className={`ann-btn ann-btn--sm ann-btn--text${value.numbered ? " ann-btn--on" : ""}`}
+        title="Numbering for this drawing's callouts"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {sample.length > 6 ? `${sample.slice(0, 5)}…` : sample} ▾
+      </button>
+      {open && (
+        <div className="ann-num" role="menu" onKeyDown={(e) => e.stopPropagation()}>
+          <button
+            role="menuitemradio"
+            aria-checked={!value.numbered}
+            className={`ann-num__item${!value.numbered ? " ann-num__item--on" : ""}`}
+            onClick={() => {
+              onChange({ numbered: false });
+              setOpen(false);
+            }}
+          >
+            <span className="ann-num__sample">—</span> No numbers
+          </button>
+          {NUMBER_FORMATS.filter((f) => f.id !== "custom").map((f) => {
+            const on = value.numbered && value.format === f.id;
+            return (
+              <button
+                key={f.id}
+                role="menuitemradio"
+                aria-checked={on}
+                className={`ann-num__item${on ? " ann-num__item--on" : ""}`}
+                onClick={() => {
+                  onChange({ numbered: true, format: f.id });
+                  setOpen(false);
+                }}
+              >
+                <span className="ann-num__sample">{f.sample}</span> {f.label}
+              </button>
+            );
+          })}
+          <div className="ann-num__custom">
+            <input
+              value={template}
+              aria-label="Custom numbering pattern"
+              placeholder="Step {n}"
+              onChange={(e) => setTemplate(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  applyTemplate();
+                  setOpen(false);
+                } else if (e.key === "Escape") {
+                  setOpen(false);
+                }
+              }}
+            />
+            <button
+              className={`ann-num__item${value.numbered && value.format === "custom" ? " ann-num__item--on" : ""}`}
+              onClick={() => {
+                applyTemplate();
+                setOpen(false);
+              }}
+            >
+              <span className="ann-num__sample">{calloutText(1, "", { numbered: true, format: "custom", template }).prefix || "…"}</span>
+              Use custom
+            </button>
+            <span className="ann-num__note">{"{n} 1 · {01} 01 · {a} a · {A} A"}</span>
+          </div>
+        </div>
+      )}
+    </span>
   );
 };

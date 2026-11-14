@@ -5,6 +5,7 @@
 import {
   CaptureUpdateAction,
   convertToExcalidrawElements,
+  newElementWith,
 } from "@excalidraw/excalidraw";
 
 import type { ExcalidrawElement } from "@excalidraw/element/types";
@@ -35,6 +36,11 @@ export type LabelStyle = "white" | "plain" | "tinted" | "outline";
 export type ArrowShape = "straight" | "curved" | "elbow";
 export type ArrowHead = "arrow" | "triangle" | "dot" | "bar" | "none";
 export type StrokeStyle = "solid" | "dashed" | "dotted";
+/** 1, 2, 3 · 01, 02, 03 · a, b, c · A, B, C · a custom pattern like "Step {n}" */
+export type NumberFormat = "1" | "01" | "a" | "A" | "custom";
+
+/** How callouts in a drawing are numbered. */
+export type Numbering = { numbered: boolean; format: NumberFormat; template: string };
 
 /** Defaults for new annotations; once made, they're edited natively. */
 export type CalloutOptions = {
@@ -42,6 +48,9 @@ export type CalloutOptions = {
   shape: ArrowShape;
   head: ArrowHead;
   numbered: boolean;
+  format: NumberFormat;
+  /** custom pattern: {n} 1, {01} 01, {a} a, {A} A; no token → number appended */
+  template: string;
   /** line width in screen px (arrows, outlines, measure) */
   width: number;
   stroke: StrokeStyle;
@@ -52,6 +61,8 @@ export const DEFAULT_CALLOUT: CalloutOptions = {
   shape: "straight",
   head: "triangle",
   numbered: true,
+  format: "01",
+  template: "Step {n}",
   width: 2,
   stroke: "solid",
 };
@@ -78,12 +89,62 @@ export const labelColors = (style: LabelStyle, color: { stroke: string; fill: st
   }
 };
 
-export const calloutText = (n: number, label: string, numbered: boolean) => {
-  const t = label.trim();
-  if (!numbered) {
-    return t || formatNumber(n);
+/** 1 → a, 26 → z, 27 → aa (like spreadsheet columns). */
+const letters = (n: number) => {
+  let out = "";
+  for (let v = Math.max(1, Math.floor(n)); v > 0; v = Math.floor((v - 1) / 26)) {
+    out = String.fromCharCode(97 + ((v - 1) % 26)) + out;
   }
-  return t ? `${formatNumber(n)}  ${t}` : formatNumber(n);
+  return out;
+};
+
+/** The number part of a callout label, e.g. 3 → "03", "c", "Step 3". */
+export const formatCalloutNumber = (n: number, format: NumberFormat = "01", template = "") => {
+  switch (format) {
+    case "1":
+      return String(n);
+    case "a":
+      return letters(n);
+    case "A":
+      return letters(n).toUpperCase();
+    case "custom": {
+      const t = template.trim();
+      if (!t) {
+        return String(n);
+      }
+      const tokens: Record<string, string> = {
+        "{n}": String(n),
+        "{01}": String(n).padStart(2, "0"),
+        "{a}": letters(n),
+        "{A}": letters(n).toUpperCase(),
+      };
+      return /\{(n|01|a|A)\}/.test(t)
+        ? t.replace(/\{(n|01|a|A)\}/g, (m) => tokens[m])
+        : `${t} ${n}`;
+    }
+    default:
+      return String(n).padStart(2, "0");
+  }
+};
+
+export const NUMBER_FORMATS: { id: NumberFormat; label: string; sample: string }[] = [
+  { id: "1", label: "1, 2, 3", sample: "1" },
+  { id: "01", label: "01, 02, 03", sample: "01" },
+  { id: "a", label: "a, b, c", sample: "a" },
+  { id: "A", label: "A, B, C", sample: "A" },
+  { id: "custom", label: "Custom", sample: "…" },
+];
+
+/** Label text and the number prefix it starts with ("" when not numbered). */
+export const calloutText = (n: number, label: string, numbering: Numbering) => {
+  const t = label.trim();
+  const prefix = numbering.numbered
+    ? formatCalloutNumber(n, numbering.format, numbering.template)
+    : "";
+  if (!prefix) {
+    return { text: t || formatCalloutNumber(n, numbering.format, numbering.template), prefix };
+  }
+  return { text: t ? `${prefix}  ${t}` : prefix, prefix };
 };
 
 /**
@@ -150,22 +211,91 @@ export function formatNumber(n: number) {
   return String(n).padStart(2, "0");
 }
 
+/** Arrow end to attach to whatever lies under `at` (like drawing a native arrow). */
+type Bind = { side: "start" | "end"; at: Point };
+
+const BINDABLE = new Set(["rectangle", "diamond", "ellipse", "image", "stickynote", "iframe", "embeddable"]);
+
+/**
+ * Topmost element an arrow end at `p` should stick to: one containing the
+ * point (the arrow then keeps that exact spot, "inside"), or one whose edge
+ * is within a few screen px (it then snaps to the outline, "orbit").
+ */
+const bindTargetAt = (
+  api: ExcalidrawImperativeAPI,
+  p: Point,
+  exclude: Set<string>,
+) => {
+  const els = api.getSceneElements();
+  const snap = 10 / api.getAppState().zoom.value;
+  for (let i = els.length - 1; i >= 0; i--) {
+    const el = els[i];
+    const bindable =
+      BINDABLE.has(el.type) || (el.type === "text" && !(el as any).containerId);
+    if (!bindable || exclude.has(el.id) || el.isDeleted || el.angle || !el.width || !el.height) {
+      continue;
+    }
+    const inside =
+      p.x >= el.x && p.x <= el.x + el.width && p.y >= el.y && p.y <= el.y + el.height;
+    const near =
+      p.x >= el.x - snap && p.x <= el.x + el.width + snap &&
+      p.y >= el.y - snap && p.y <= el.y + el.height + snap;
+    if (inside || near) {
+      return {
+        el,
+        binding: {
+          elementId: el.id,
+          mode: inside ? ("inside" as const) : ("orbit" as const),
+          fixedPoint: [(p.x - el.x) / el.width, (p.y - el.y) / el.height] as [number, number],
+        },
+      };
+    }
+  }
+  return null;
+};
+
 /**
  * Tag new elements and insert them as one undo step. Nothing is grouped:
  * related parts are bound (arrow to label, text to its container), so each
- * stays editable with Excalidraw's own tools.
+ * stays editable with Excalidraw's own tools. Arrow ends in `binds` stick to
+ * the element under them, so they follow it when it moves.
  */
 const commit = (
   api: ExcalidrawImperativeAPI,
   created: readonly ExcalidrawElement[],
   annotation: Record<string, unknown>,
+  binds: Bind[] = [],
 ) => {
   const tagged = created.map((el) => ({
     ...el,
     customData: { ...(el.customData ?? {}), annotation },
   })) as ExcalidrawElement[];
+  const arrow = tagged.find((el) => el.type === "arrow") as any;
+  const touched = new Map<string, ExcalidrawElement>();
+  if (arrow) {
+    const own = new Set(tagged.map((el) => el.id));
+    for (const b of binds) {
+      const key = b.side === "start" ? "startBinding" : "endBinding";
+      if (arrow[key]) {
+        continue; // already bound (a callout's label)
+      }
+      const hit = bindTargetAt(api, b.at, own);
+      if (!hit) {
+        continue;
+      }
+      arrow[key] = hit.binding;
+      const target = touched.get(hit.el.id) ?? hit.el;
+      touched.set(
+        hit.el.id,
+        newElementWith(target, {
+          boundElements: [...(target.boundElements ?? []), { id: arrow.id, type: "arrow" }],
+        }),
+      );
+    }
+  }
+  const scene = api.getSceneElementsIncludingDeleted().map((el) => touched.get(el.id) ?? el);
   api.updateScene({
-    elements: [...api.getSceneElementsIncludingDeleted(), ...tagged],
+    elements: [...scene, ...tagged],
     captureUpdate: CaptureUpdateAction.IMMEDIATELY,
   });
   return tagged;
@@ -184,7 +314,7 @@ export const addCallout = (
   opts: CalloutOptions = DEFAULT_CALLOUT,
 ) => {
   const n = nextCalloutNumber(api.getSceneElements());
-  const labelText = calloutText(n, text, opts.numbered);
+  const { text: labelText, prefix } = calloutText(n, text, opts);
   const rectId = randomId();
   const sc = screenScale(api);
   const fontSize = Math.round(16 * sc);
@@ -249,9 +379,12 @@ export const addCallout = (
     callout: n,
     id: randomId(),
     numbered: opts.numbered,
+    format: opts.format,
+    template: opts.template,
+    prefix,
     style: opts.style,
   };
-  return commit(api, convertToExcalidrawElements(skeletons), annotation);
+  return commit(api, convertToExcalidrawElements(skeletons), annotation, [{ side: "end", at: target }]);
 };
 
 /** Native arrow properties for the chosen defaults. */
@@ -292,6 +425,10 @@ export const addArrow = (
       } as Skeleton,
     ]),
     { arrow: true },
+    [
+      { side: "start", at: a },
+      { side: "end", at: b },
+    ],
   );
 
 /** Numbered marker: a filled circle with the next number, centred on `p`. */
@@ -299,7 +436,9 @@ export const addNumber = (
   api: ExcalidrawImperativeAPI,
   p: Point,
   color: AnnotateColor,
+  format: NumberFormat = "1",
 ) => {
+  const markerFormat = format === "custom" || format === "01" ? "1" : format;
   const n = nextCalloutNumber(api.getSceneElements(), "number");
   const sc = screenScale(api);
   const size = 32 * sc;
@@ -317,10 +456,10 @@ export const addNumber = (
         fillStyle: "solid",
         ...CLEAN,
         strokeWidth: 1 * sc,
-        label: { text: String(n), fontSize: Math.round(16 * sc), strokeColor: "#ffffff" },
+        label: { text: formatCalloutNumber(n, markerFormat), fontSize: Math.round(16 * sc), strokeColor: "#ffffff" },
       },
     ]),
-    { number: n },
+    { number: n, format: markerFormat },
   );
 };
 
@@ -567,6 +706,44 @@ export const unlockBackground = (api: ExcalidrawImperativeAPI) => {
   }
   return count;
 };
+
+/**
+ * Lock or unlock image positions, keeping their stacking order. Selected
+ * images get locked; with no image selected, locked images are unlocked
+ * (a locked image can't be selected), or the only image is locked.
+ */
+export const toggleImageLock = (
+  api: ExcalidrawImperativeAPI,
+): { action: "locked" | "unlocked"; count: number } | null => {
+  const all = api.getSceneElementsIncludingDeleted();
+  const live = all.filter((el) => el.type === "image" && !el.isDeleted);
+  const sel = selectedIds(api);
+  let ids = new Set(live.filter((el) => sel.has(el.id) && !el.locked).map((el) => el.id));
+  let lock = true;
+  if (!ids.size) {
+    const locked = live.filter((el) => el.locked);
+    if (locked.length) {
+      ids = new Set(locked.map((el) => el.id));
+      lock = false;
+    } else if (live.length === 1) {
+      ids = new Set([live[0].id]);
+    }
+  }
+  if (!ids.size) {
+    return null;
+  }
+  reorder(
+    api,
+    all.map((el) => (ids.has(el.id) ? { ...el, locked: lock } : el)) as ExcalidrawElement[],
+  );
+  if (lock) {
+    api.selection.clear();
+  }
+  return { action: lock ? "locked" : "unlocked", count: ids.size };
+};
+
+export const lockedImageCount = (api: ExcalidrawImperativeAPI) =>
+  api.getSceneElements().filter((el) => el.type === "image" && el.locked).length;
 
 export const sendToBack = (api: ExcalidrawImperativeAPI) => {
   const all = api.getSceneElementsIncludingDeleted();

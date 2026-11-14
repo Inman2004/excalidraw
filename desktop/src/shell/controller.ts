@@ -551,6 +551,15 @@ const onFrameMessage = (docId: string, msg: FromFrame) => {
         handleSnapshot(docId, msg.snapshot);
       }
       break;
+    case "view": {
+      const r = rt(docId);
+      if (r.latest) {
+        r.latest = { ...r.latest, view: msg.view };
+      }
+      updateDoc(docId, { view: msg.view });
+      scheduleSessionSave();
+      break;
+    }
     case "command":
       void runCommand(msg.command, msg.arg, docId);
       break;

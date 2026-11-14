@@ -10,3 +10,4 @@ export { CursorIcon as SelectIcon } from "@solar-icons/react/line-duotone/cursor
 export { ArrowRightUpIcon as PlainArrowIcon } from "@solar-icons/react/line-duotone/arrow-right-up";
 export { HashtagCircleIcon as NumberIcon } from "@solar-icons/react/line-duotone/hashtag-circle";
 export { LinkIcon as PairIcon } from "@solar-icons/react/line-duotone/link";
+export { GalleryIcon as BackgroundIcon } from "@solar-icons/react/line-duotone/gallery";

@@ -34,9 +34,10 @@ import {
   calloutGroups,
   isNumbered,
   labelOf,
-} from "./requests";
+  numberingOf,
+} from "./callouts";
 
-import type { CalloutGroup } from "./requests";
+import type { CalloutGroup } from "./callouts";
 
 export type Density = "compact" | "balanced" | "spacious";
 
@@ -320,7 +321,7 @@ export const autoArrange = (
   const order = [c, a, b, e].flatMap((side) => sides[side]);
   const textOf = (g: CalloutGroup) =>
     opts.renumber && isNumbered(g)
-      ? calloutText(order.indexOf(g) + 1, labelOf(g), true)
+      ? calloutText(order.indexOf(g) + 1, labelOf(g), numberingOf(g)).text
       : ((g.text as any).originalText ?? (g.text as any).text);
 
   // ---- card sizes: one width per column, wrapping at the maximum
@@ -478,7 +479,8 @@ export const autoArrange = (
       const n = order.indexOf(p.g) + 1;
       for (let i = changed.length - 3; i < changed.length; i++) {
         const el = changed[i] as any;
-        changed[i] = { ...el, customData: { ...el.customData, annotation: { ...annOf(el), callout: n } } };
+        const prefix = calloutText(n, "", numberingOf(p.g)).prefix;
+        changed[i] = { ...el, customData: { ...el.customData, annotation: { ...annOf(el), callout: n, prefix } } };
       }
     }
   }

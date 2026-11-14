@@ -1,6 +1,6 @@
 [package]
 name = "paperimo"
-version = "0.1.1"
+version = "0.1.2"
 description = "Paperimo: a notepad-like desktop sketchbook built on the Excalidraw engine"
 edition = "2021"
 

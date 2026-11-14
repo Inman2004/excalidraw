@@ -18,7 +18,21 @@ import { searchElements } from "../common/search";
 
 import { autoArrange } from "./annotationLayout";
 
-import { calloutReportText, calloutText, formatNumber, labelColors } from "./annotate";
+import { calloutReportText, labelColors } from "./annotate";
+import {
+  annOf,
+  applyChanges,
+  calloutGroups,
+  labelOf,
+  moveCallout,
+  numberingOf,
+  prefixOf,
+  rebuildLabel,
+  reorderCallouts,
+  setNumbering,
+} from "./callouts";
+
+import type { CalloutGroup } from "./callouts";
 
 import type {
   CalloutInfo,
@@ -137,138 +151,6 @@ const runExport = async (
 
 // ------------------------------------------------------------------ callouts
 
-export type CalloutGroup = {
-  groupId: string;
-  n: number;
-  rect?: ExcalidrawElement;
-  text?: ExcalidrawElement;
-  arrow?: ExcalidrawElement;
-  all: ExcalidrawElement[];
-};
-
-export const annOf = (el: ExcalidrawElement) => (el.customData as any)?.annotation ?? {};
-
-/**
- * Callouts are found from their label box. Its text is the bound label, and
- * its arrow is the tagged arrow bound to it (or, in files made before
- * callouts were ungrouped, the tagged arrow in the same group).
- */
-export const calloutGroups = (api: ExcalidrawImperativeAPI) => {
-  const els = api.getSceneElements();
-  const tagged = els.filter((el) => typeof annOf(el).callout === "number");
-  const groups: CalloutGroup[] = [];
-  for (const rect of tagged) {
-    if (rect.type !== "rectangle") {
-      continue;
-    }
-    const legacyGroup = rect.groupIds[rect.groupIds.length - 1];
-    const text = tagged.find((el) => el.type === "text" && (el as any).containerId === rect.id);
-    const arrow = tagged.find(
-      (el) =>
-        el.type === "arrow" &&
-        ((el as any).startBinding?.elementId === rect.id ||
-          (!!legacyGroup && el.groupIds.includes(legacyGroup))),
-    );
-    const all = [rect, text, arrow].filter(Boolean) as ExcalidrawElement[];
-    groups.push({ groupId: rect.id, n: annOf(rect).callout, rect, text, arrow, all });
-  }
-  return groups.sort((x, y) => x.n - y.n);
-};
-
-export const isNumbered = (g: CalloutGroup) => annOf(g.rect ?? g.all[0]).numbered !== false;
-
-export const labelOf = (g: CalloutGroup) => {
-  const raw = ((g.text as any)?.originalText ?? (g.text as any)?.text ?? "") as string;
-  return isNumbered(g) ? raw.replace(/^\d+\s*/, "") : raw;
-};
-
-/**
- * Rebuild a callout's label box for new text/number: the container is
- * regenerated (same id, same centre) so its size fits the text.
- */
-const rebuildLabel = (
-  g: CalloutGroup,
-  n: number,
-  label: string,
-): ExcalidrawElement[] => {
-  if (!g.rect || !g.text) {
-    return [];
-  }
-  const rect = g.rect as any;
-  const oldText = g.text as any;
-  const text = calloutText(n, label, isNumbered(g));
-  const built = convertToExcalidrawElements([
-    {
-      type: "rectangle",
-      id: rect.id,
-      x: 0,
-      y: 0,
-      label: { text, fontSize: oldText.fontSize, strokeColor: oldText.strokeColor },
-      strokeColor: rect.strokeColor,
-      backgroundColor: rect.backgroundColor,
-      fillStyle: rect.fillStyle,
-      strokeWidth: rect.strokeWidth,
-      roughness: rect.roughness,
-      roundness: rect.roundness,
-    },
-  ]);
-  const newRect = built.find((el) => el.type === "rectangle") as any;
-  const newText = built.find((el) => el.type === "text") as any;
-  const width = Math.max(newRect.width, (44 * oldText.fontSize) / 16);
-  const height = Math.max(newRect.height, rect.height);
-  const cx = rect.x + rect.width / 2;
-  const cy = rect.y + rect.height / 2;
-  const annotation = { ...(rect.customData?.annotation ?? {}), callout: n };
-  const arrows = (rect.boundElements ?? []).filter((b: any) => b.type === "arrow");
-  const nextRect = {
-    ...rect,
-    x: cx - width / 2,
-    y: cy - height / 2,
-    width,
-    height,
-    boundElements: [{ type: "text", id: newText.id }, ...arrows],
-    customData: { ...(rect.customData ?? {}), annotation },
-    version: rect.version + 1,
-    versionNonce: Math.floor(Math.random() * 2 ** 31),
-    updated: Date.now(),
-  };
-  const nextText = {
-    ...newText,
-    x: cx - newText.width / 2,
-    y: cy - newText.height / 2,
-    groupIds: oldText.groupIds,
-    frameId: oldText.frameId,
-    customData: { ...(oldText.customData ?? {}), annotation },
-  };
-  return [nextRect, newElementWith(oldText, { isDeleted: true }), nextText];
-};
-
-export const applyChanges = (
-  api: ExcalidrawImperativeAPI,
-  changed: ExcalidrawElement[],
-) => {
-  const byId = new Map(changed.map((el) => [el.id, el]));
-  const all = api.getSceneElementsIncludingDeleted();
-  const next: ExcalidrawElement[] = [];
-  for (const el of all) {
-    next.push(byId.get(el.id) ?? el);
-    byId.delete(el.id);
-  }
-  // brand-new elements (regenerated labels) go right after their container
-  const added: ExcalidrawElement[] = [];
-  byId.forEach((el) => {
-    const container = (el as any).containerId;
-    const i = next.findIndex((e) => e.id === container);
-    next.splice(i >= 0 ? i + 1 : next.length, 0, el);
-    added.push(el);
-  });
-  // give inserted elements a fractional index that fits their new position
-  if (added.length) {
-    syncMovedIndices(next, new Map(added.map((el) => [el.id, el])) as any);
-  }
-  api.updateScene({ elements: next, captureUpdate: CaptureUpdateAction.IMMEDIATELY });
-};
-
 const recolor = (g: CalloutGroup, stroke: string, fill: string) => {
   const ink = labelColors(annOf(g.rect ?? g.all[0]).style ?? "tinted", { stroke, fill });
   return g.all.map((el) => {
@@ -280,35 +162,6 @@ const recolor = (g: CalloutGroup, stroke: string, fill: string) => {
     }
     return newElementWith(el, { strokeColor: stroke });
   });
-};
-
-const renumber = (api: ExcalidrawImperativeAPI) => {
-  const changed: ExcalidrawElement[] = [];
-  calloutGroups(api).forEach((g, i) => {
-    const n = i + 1;
-    if (g.n === n) {
-      return;
-    }
-    const rebuilt = rebuildLabel(g, n, labelOf(g));
-    changed.push(...rebuilt);
-    const touched = new Set(rebuilt.map((el) => el.id));
-    for (const el of g.all) {
-      if (!touched.has(el.id)) {
-        changed.push(
-          newElementWith(el, {
-            customData: {
-              ...(el.customData ?? {}),
-              annotation: { ...((el.customData as any)?.annotation ?? {}), callout: n },
-            },
-          }),
-        );
-      }
-    }
-  });
-  if (changed.length) {
-    applyChanges(api, changed);
-  }
-  return changed.length > 0;
 };
 
 // ------------------------------------------------------------------ dispatch
@@ -400,8 +253,10 @@ export const handleRequest = async (
     case "callouts": {
       const list: CalloutInfo[] = calloutGroups(api).map((g) => ({
         groupId: g.groupId,
-        number: formatNumber(g.n),
+        number: prefixOf(g) || "·",
         label: labelOf(g),
+        numbered: numberingOf(g).numbered,
+        n: g.n,
         // the arrow carries the colour; a text-only label has no border
         color: (g.arrow ?? g.rect ?? g.all[0]).strokeColor,
       }));
@@ -454,7 +309,17 @@ export const handleRequest = async (
       return true;
     }
     case "callouts-renumber":
-      return renumber(api);
+      return reorderCallouts(api, null);
+    case "callouts-reorder":
+      return reorderCallouts(api, req.ids);
+    case "callout-move":
+      return moveCallout(api, req.groupId, req.to);
+    case "callouts-numbering":
+      return setNumbering(api, req.numbering);
+    case "callouts-numbering-info": {
+      const groups = calloutGroups(api);
+      return groups.length ? numberingOf(groups[groups.length - 1]) : null;
+    }
     case "callouts-arrange":
       return autoArrange(api, { density: req.density ?? "balanced", renumber: !!req.renumber });
     case "report":

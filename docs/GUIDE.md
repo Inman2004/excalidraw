@@ -60,8 +60,8 @@ with annotate mode already on.
 ![Annotate mode: callouts arranged in a column beside a wireframe, the annotate bar and callout options at the bottom, and the "6 callouts arranged · Undo" message at the top](screenshots/annotate.png)
 
 The bottom bar, left to right: **Select**, **Callout**, **Arrow**, **Number marker**, **Highlight**,
-**Box**, **Circle**, **Measure**; the colours; lock / unlock the background image, send back / bring
-forward; **Auto** arrange; **Select callout pair**; **Copy report**; and close.
+**Box**, **Circle**, **Measure**; the colours; lock / unlock the image's position, lock as background,
+send back / bring forward; **Auto** arrange; **Select callout pair**; **Copy report**; and close.
 
 The row above it shows the defaults for the current tool. They only apply to new annotations; anything
 already drawn is edited with Excalidraw's own style panel.
@@ -84,7 +84,12 @@ Callout options in the row above the bar:
 | Arrow | Straight · curved · elbow |
 | Arrowhead | Triangle · arrow · dot · bar · none |
 | Line | 1, 2, 4 or 6 px · solid, dashed or dotted |
-| **01** | Numbering on or off |
+| **01 ▾** | Numbering: none · `1, 2, 3` · `01, 02, 03` · `a, b, c` · `A, B, C` · a custom pattern |
+
+A drawing uses one numbering for all its callouts. Changing it renumbers the callouts already there
+(one undo step), and new callouts follow it. A custom pattern can be any text with a placeholder:
+`Step {n}` gives Step 1, Step 2…; `{A})` gives A), B)…; `{01}` and `{a}` work too. Without a placeholder
+the number goes at the end.
 
 ### Editing callouts and arrows
 
@@ -94,7 +99,12 @@ Everything annotate makes is an ordinary Excalidraw element, so you edit it the 
 - Click a **callout's arrow** to select just the arrow. Drag its middle handle to bend it, drag the ends
   to re-point it, and change its head, thickness, line style or colour in the style panel.
 - **Move the label** and its arrow follows.
-- **Double-click the label** to change its text.
+- **Double-click a label** (with any annotate tool, or outside annotate mode) to edit it. The number
+  stays separate from the words, so you only edit the text. **‹ ›** next to the number move the
+  callout earlier or later (or **Alt+↑ / Alt+↓**); the others renumber around it. **Enter** saves,
+  **Esc** cancels. Pressing **Enter** with a callout selected opens the same editor.
+- Arrows stick to what they point at, like Excalidraw's own arrows: a callout's tip (and both ends of
+  an annotate arrow) attach to the shape or image under them, so when that moves, the arrows follow.
 - **Select callout pair** selects a label together with its arrow, so they move as one.
 - Delete an arrow and the label stays. Delete a label and Paperimo offers to delete its arrow too.
 - **Ctrl+Z** undoes a whole callout in one step.
@@ -130,6 +140,9 @@ Open it from the main menu (**Callouts…**) or the command palette.
 ![The Callouts panel listing six callouts with colour choices, delete buttons, Copy report and Auto arrange](screenshots/callouts-panel.png)
 
 - Click a callout to jump to it; edit its text; change its colour; delete it.
+- **Change the order** by dragging a row by its grip, with the **↑ ↓** buttons, or **Alt+↑ / Alt+↓** in
+  the label. The callouts in the drawing renumber to match.
+- **Numbering** at the top switches the whole drawing between none, 1, 01, a, A and a custom pattern.
 - **Renumber** closes gaps after deleting.
 - **Copy report** copies every label as a numbered list, ready for a bug ticket or review email:
 
@@ -149,7 +162,10 @@ Open it from the main menu (**Callouts…**) or the command palette.
 - **Box** and **Circle:** drag to outline an area. Hold **Shift** for a square or circle.
 - **Measure:** drag between two points to get a dimension line with its length. On a photo it reports
   the image's own pixels. Hold **Shift** for 45° steps.
-- **Lock background** locks the screenshot so you can't move it by accident; **Unlock** frees it again.
+- **Lock image position** (padlock) locks the selected image, or the only image, so it can't be moved
+  by accident while you annotate; it keeps its place in the stack. Click it again to unlock. It's also
+  in the command palette as "Lock / unlock image position".
+- **Lock as background** (picture icon) also sends the image to the back.
 - **C** cycles colours; hold **Space** to pan; **Esc** cancels or leaves annotate mode.
 
 ## Export

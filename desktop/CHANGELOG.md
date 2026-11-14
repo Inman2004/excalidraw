@@ -2,6 +2,31 @@
 
 All notable changes to Paperimo. Versions follow [semantic versioning](https://semver.org).
 
+## 0.1.2
+
+### Callouts
+- Double-click a callout label to edit it in place, with any annotate tool or outside annotate mode
+  (Enter with a callout selected works too). The number stays separate from the text.
+- Change the order of callouts: ‹ › in the label editor, drag rows in the Callouts panel, its ↑ ↓
+  buttons, or Alt+↑ / Alt+↓. The callouts renumber to match.
+- Numbering formats: 1, 01, a, A, or a custom pattern such as "Step {n}", per drawing. Switching
+  renumbers the existing callouts in one undo step. Number markers follow the format too.
+- Arrows stick to what they point at, like Excalidraw's own arrows: a callout's tip and both ends of
+  an annotate arrow attach to the shape or image under them and follow it when it moves.
+- When a label's text changes length, its arrow now starts at the new edge of the label.
+
+### Images
+- Lock image position: a toggle in the annotate bar (and the command palette) that pins an image
+  in place without sending it to the back. "Lock as background" is still there.
+
+### Fixes
+- Panning and zooming no longer stutter in drawings with large images: moving the view no longer
+  re-saves the whole drawing about once a second.
+- Editing a callout's text from the Callouts panel could detach the text from its label box.
+- Reordering frames in the Frames panel now works in the installed app (drag and drop didn't).
+- Hand-drawn fonts now load from the app itself instead of falling back to a web font server.
+- The installer and uninstaller use the Paperimo icon.
+
 ## 0.1.1
 
 ### Automatic updates
