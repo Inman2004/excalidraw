@@ -1,0 +1,42 @@
+/* Paperimo amber accent for the Excalidraw editor: CSS variable overrides
+   only, the engine itself is unchanged. Light mode uses a deeper amber so
+   white text and thin lines stay readable; dark mode uses the signature
+   shade #fbbf24 (HSL 43.3 96.4% 56.3%). `:root` raises specificity above
+   Excalidraw's own `.excalidraw` rules regardless of stylesheet order. */
+
+:root .excalidraw {
+  --color-primary: #d97706;
+  --color-primary-darker: #b45309;
+  --color-primary-darkest: #92400e;
+  --color-primary-light: #fef3c7;
+  --color-primary-light-darker: #fde68a;
+  --color-primary-hover: #b45309;
+  --color-selection: #f59e0b;
+  --color-brand-hover: #b45309;
+  --color-brand-active: #92400e;
+  --color-on-primary-container: #451a03;
+  --color-surface-primary-container: #fef3c7;
+  --color-logo-icon: #f59e0b;
+}
+
+:root .excalidraw.theme--dark {
+  --color-primary: #fbbf24;
+  --color-primary-darker: #fcd34d;
+  --color-primary-darkest: #fde68a;
+  --color-primary-light: #4a3a12;
+  --color-primary-light-darker: #3d3010;
+  --color-primary-hover: #fcd34d;
+  --color-selection: #fbbf24;
+  --color-brand-hover: #fcd34d;
+  --color-brand-active: #fde68a;
+  --color-on-primary-container: #fef3c7;
+  --color-surface-primary-container: #4a3a12;
+}
+
+/* filled amber in dark mode is light: Excalidraw's white text on it would be
+   unreadable, so those few spots get dark text */
+:root .excalidraw.theme--dark .Dialog__action-button--primary,
+:root .excalidraw.theme--dark .Toast .close,
+:root .excalidraw.theme--dark .library-actions-counter {
+  color: #2b1d00;
+}

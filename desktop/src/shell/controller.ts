@@ -403,10 +403,10 @@ export const updateTitle = () => {
   const tab = s.tabs.find((t) => t.tabId === s.activeTabId);
   const doc = tab && s.docs[tab.docId];
   const title = s.homeOpen
-    ? "Home — Excalidraw"
+    ? "Home — Paperimo"
     : doc
-    ? `${isUnsaved(doc) ? "• " : ""}${stripExt(doc.displayName)} — Excalidraw`
-    : "Excalidraw";
+    ? `${isUnsaved(doc) ? "• " : ""}${stripExt(doc.displayName)} — Paperimo`
+    : "Paperimo";
   document.title = title;
   if (IN_TAURI) {
     import("@tauri-apps/api/window").then(({ getCurrentWindow }) =>

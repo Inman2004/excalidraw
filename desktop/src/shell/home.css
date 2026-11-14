@@ -100,23 +100,18 @@
 }
 
 .dsk-action--primary {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--color-primary) 92%, #fff) 0%, var(--color-primary) 100%);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--brand) 82%, #fff) 0%, var(--brand) 100%);
   border-color: transparent;
-  color: #fff;
+  color: var(--on-brand);
 }
 
 .dsk-action--primary:hover {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--color-primary) 85%, #fff) 0%, var(--color-primary) 100%);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--brand) 72%, #fff) 0%, var(--brand) 100%);
 }
 
 .dsk-action--primary .dsk-action__icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-:root[data-theme="dark"] .dsk-action--primary,
-:root[data-theme="dark"] .dsk-action--primary .dsk-action__icon {
-  color: #121212;
+  background: rgba(43, 29, 0, 0.1);
+  color: var(--on-brand);
 }
 
 .dsk-action__title {
@@ -313,7 +308,7 @@
 }
 
 .dsk-toggle__track--on {
-  background: var(--color-primary);
+  background: var(--brand-strong);
 }
 
 .dsk-toggle__thumb {

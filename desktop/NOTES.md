@@ -1,6 +1,12 @@
-# Excalidraw Desktop — engineering notes
+# Paperimo — engineering notes
 
-Engine: Excalidraw monorepo source at `e1b7aacb3` (2026-10-18). Not modified.
+Paperimo (formerly built as "Excalidraw Desktop") is an unofficial app; the drawing engine is the
+Excalidraw monorepo source at `e1b7aacb3` (2026-10-18), not modified.
+
+Identity: product name `Paperimo`, identifier `io.github.inman2004.paperimo`, exe `paperimo.exe`.
+App data lives in `%APPDATA%\io.github.inman2004.paperimo`. On first start after the rename the app
+copies (never moves or overwrites) the old `%APPDATA%\com.excalidraw.desktop.local` folder across,
+so tabs, recovery snapshots, backups and preferences carry over (`migrate_legacy_data` in `lib.rs`).
 
 ## P0 gate — multiple mounted editors (2026-11-13) → **FAIL**, single-editor fallback adopted
 

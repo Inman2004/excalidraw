@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Excalidraw",
+  "productName": "Paperimo",
   "version": "0.1.0",
-  "identifier": "com.excalidraw.desktop.local",
+  "identifier": "io.github.inman2004.paperimo",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Excalidraw",
+        "title": "Paperimo",
         "width": 1280,
         "height": 820,
         "minWidth": 480,
@@ -29,6 +29,10 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "publisher": "moon",
+    "copyright": "© 2026 moon. Drawing engine: Excalidraw (MIT).",
+    "shortDescription": "Notepad-like sketchbook built on Excalidraw",
+    "longDescription": "Paperimo is an unofficial, independent desktop app built on the open-source Excalidraw engine. It is not affiliated with or endorsed by Excalidraw.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

@@ -1,11 +1,11 @@
 <div align="center">
-  <img src="desktop/src-tauri/icons/128x128@2x.png" width="96" alt="Excalidraw Desktop icon" />
-  <h1>Excalidraw Desktop</h1>
-  <p><strong>The hand-drawn whiteboard you love, as a fast little Windows app.</strong><br/>
+  <img src="desktop/src-tauri/icons/128x128@2x.png" width="96" alt="Paperimo icon" />
+  <h1>Paperimo</h1>
+  <p><strong>The hand-drawn Excalidraw whiteboard, as a fast little Windows app.</strong><br/>
   Tabs like a text editor. Files that don't get lost. Screenshots you can mark up in seconds.</p>
 
   <p>
-    <a href="https://github.com/Inman2004/excalidraw/releases/latest"><img alt="Download for Windows" src="https://img.shields.io/badge/Download-Windows%20installer-6965db?style=for-the-badge&logo=windows" /></a>
+    <a href="https://github.com/Inman2004/excalidraw/releases/latest"><img alt="Download for Windows" src="https://img.shields.io/badge/Download-Windows%20installer-fbbf24?style=for-the-badge&logo=windows" /></a>
   </p>
   <p>
     <a href="https://github.com/Inman2004/excalidraw/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Inman2004/excalidraw?label=latest" /></a>
@@ -14,6 +14,10 @@
 </div>
 
 ---
+
+> **Unofficial.** Paperimo is an independent app built on the open-source
+> [Excalidraw](https://github.com/excalidraw/excalidraw) engine. It is not affiliated with,
+> endorsed by, or supported by the Excalidraw team. Please report problems here, not to them.
 
 ## Why this exists
 
@@ -29,7 +33,7 @@ already know still works and your files open fine on excalidraw.com too.
 
 ## Get it
 
-1. Grab **`Excalidraw_x.y.z_x64-setup.exe`** from the [latest release](https://github.com/Inman2004/excalidraw/releases/latest).
+1. Grab **`Paperimo_x.y.z_x64-setup.exe`** from the [latest release](https://github.com/Inman2004/excalidraw/releases/latest).
 2. Run it. It installs per user, so you don't need admin rights.
 3. Double-click any `.excalidraw` file and it opens right in the app.
 
@@ -37,6 +41,10 @@ already know still works and your files open fine on excalidraw.com too.
 > your PC". Click **More info → Run anyway**. Prefer to build it yourself? See [Build from source](#build-from-source).
 
 It needs Windows 10 or 11 with the WebView2 runtime. Windows 11 already has it, and the installer fetches it on Windows 10 if it's missing.
+
+**Updating:** there's no auto-update yet. Download the newest installer and run it over the old one; your
+drawings, open tabs and settings stay put. What changed in each version is in the
+[changelog](desktop/CHANGELOG.md).
 
 ## What you get
 
@@ -118,7 +126,7 @@ git clone https://github.com/Inman2004/excalidraw.git
 cd excalidraw
 yarn install
 cd desktop
-npm install
+npm ci            # installs the exact versions from package-lock.json
 npx tauri dev     # run it
 npx tauri build   # make the installer (src-tauri/target/release/bundle/nsis)
 ```
@@ -130,7 +138,8 @@ one isolated editor per tab, Rust-side file safety, and so on? See [`desktop/NOT
 ## Credits
 
 - **[Excalidraw](https://github.com/excalidraw/excalidraw)**: the whole drawing experience. MIT licensed.
-  All the credit for the canvas goes to that team; this project just gives it a desktop home.
+  All the credit for the canvas goes to that team; Paperimo just gives it a desktop home. "Excalidraw" is
+  their name; Paperimo uses it only to say what it's built on and which files it opens.
 - **[Solar Icons](https://www.figma.com/community/file/1166831539721848736)** by 480 Design, CC BY 4.0.
 - **[Tauri](https://tauri.app)** for the tiny, fast native shell.
 - Built with ♥ by **moon**.

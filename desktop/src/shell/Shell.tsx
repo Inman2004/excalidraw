@@ -145,7 +145,7 @@ const FrameHost = () => {
 
 const AboutDialog = ({ onClose }: { onClose: () => void }) => (
   <Modal
-    title="About Excalidraw Desktop"
+    title="About Paperimo"
     onClose={onClose}
     footer={
       <button className="dsk-btn dsk-btn--primary" data-autofocus onClick={onClose}>
@@ -160,6 +160,10 @@ const AboutDialog = ({ onClose }: { onClose: () => void }) => (
     </p>
     <p className="dsk-muted">
       Interface icons: Solar Icons by 480 Design, licensed under CC BY 4.0.
+    </p>
+    <p className="dsk-muted">
+      Paperimo is an unofficial, independent app. It is not affiliated with or endorsed by
+      Excalidraw.
     </p>
     <p className="dsk-muted">Made by {pkg.author}.</p>
   </Modal>

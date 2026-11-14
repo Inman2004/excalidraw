@@ -35,6 +35,7 @@ import { parentName, stripExt } from "./native";
 import { setState, useStore } from "./store";
 
 import pkg from "../../package.json";
+import logo from "../assets/paperimo.svg";
 
 import "./home.css";
 
@@ -141,8 +142,8 @@ export const Home = () => {
     <div className="dsk-home">
       <div className="dsk-home__inner">
         <header className="dsk-home__hero">
-          <img className="dsk-home__logo" src="/favicon.svg" alt="" />
-          <h1>Excalidraw Desktop</h1>
+          <img className="dsk-home__logo" src={logo} alt="" />
+          <h1>Paperimo</h1>
           <p className="dsk-muted">Sketch, annotate and keep your drawings — right on your computer.</p>
         </header>
 
@@ -241,6 +242,7 @@ export const Home = () => {
             <strong>Solar Icons</strong>{" "}
             by 480 Design (CC BY 4.0) · Built with Tauri · Version {pkg.version}
           </p>
+          <p>Unofficial app · not affiliated with or endorsed by Excalidraw</p>
         </footer>
       </div>
     </div>
